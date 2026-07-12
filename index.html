@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vamana Gullu - Play Against CPU</title>
+    <style>
+        :root {
+            --bg-color: #f7f5f0;
+            --board-color: #8B5A2B;
+            --pit-color: #5C3A21;
+            --player-color: #2e7d32;
+            --cpu-color: #c62828;
+            --text-color: #2c1e11;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            color: var(--board-color);
+            text-align: center;
+        }
+
+        .subtitle {
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-style: italic;
+            color: #666;
+            text-align: center;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 10px 15px;
+            background: #eee;
+            border-radius: 8px;
+        }
+
+        .score.cpu { color: var(--cpu-color); }
+        .score.player { color: var(--player-color); }
+
+        .status-msg {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            height: 30px;
+            color: #444;
+        }
+
+        /* Mancala Board Layout */
+        .board-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--board-color);
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.3);
+            margin-bottom: 25px;
+        }
+
+        .pits-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-around;
+            gap: 12px;
+        }
+
+        /* Row orientations for counterclockwise play visualization */
+        .row.cpu-row { flex-direction: row-reverse; } /* CPU row index visually reverses right-to-left */
+        .row.player-row { flex-direction: row; }      /* Player row visually goes left-to-right */
+
+        .pit {
+            flex: 1;
+            aspect-ratio: 1;
+            background: var(--pit-color);
+            border-radius: 50%;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.8), 0 2px 2px rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+
+        .pit.cpu-pit {
+            cursor: not-allowed;
+        }
+
+        .pit.player-pit:hover:not(.empty) {
+            transform: scale(1.05);
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.8), 0 0 12px #fff;
+        }
+
+        .pit.empty {
+            cursor: not-allowed;
+        }
+
+        .pit.active-turn-row {
+            border: 2px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .seed-count {
+            color: white;
+            font-size: 1.3rem;
+            font-weight: bold;
+            z-index: 2;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+
+        /* Tiny visual seeds inside the pits */
+        .seeds-container {
+            position: absolute;
+            width: 70%;
+            height: 70%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 3px;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .seed {
+            width: 8px;
+            height: 8px;
+            background-color: #dfc39e;
+            border-radius: 50%;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+        }
+
+        button {
+            background-color: var(--board-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #6e441f;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Labels indicating whose side is whose */
+        .row-label {
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 5px 0;
+        }
+        .row-label.cpu { color: var(--cpu-color); }
+        .row-label.player { color: var(--player-color); }
+    </style>
+</head>
+<body>
+
+    <h1>Vamana Gullu</h1>
+    <div class="subtitle">Traditional 14-Pit Board Game</div>
+
+    <div class="game-container">
+        <div class="scoreboard">
+            <div class="score player">Your Captures: <span id="player-score">0</span></div>
+            <div class="score cpu">CPU Captures: <span id="cpu-score">0</span></div>
+        </div>
+
+        <div id="status" class="status-msg">Your turn! Select a pit.</div>
+
+        <div class="row-label cpu">CPU Side (Counter-Clockwise ◄)</div>
+        <div class="board-wrapper">
+            <div class="pits-grid">
+                <div class="row cpu-row" id="cpu-pits-container"></div>
+                
+                <div class="row player-row" id="player-pits-container"></div>
+            </div>
+        </div>
+        <div class="row-label player">Your Side (Counter-Clockwise ►)</div>
+
+        <div class="controls">
+            <button id="reset-btn">Restart Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        // Array representation of the board loop (14 pits total)
+        // Indices 0-6: Player pits (left to right)
+        // Indices 7-13: CPU pits (right to left)
+        let board = [];
+        let playerScore = 0;
+        let cpuScore = 0;
+        let isPlayerTurn = true;
+        let gameActive = true;
+
+        const SEEDS_PER_PIT = 5;
+
+        // Domestic Elements mappings
+        const playerRowEl = document.getElementById('player-pits-container');
+        const cpuRowEl = document.getElementById('cpu-pits-container');
+        const playerScoreEl = document.getElementById('player-score');
+        const cpuScoreEl = document.getElementById('cpu-score');
+        const statusEl = document.getElementById('status');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Initialize Game
+        function initGame() {
+            board = Array(14).fill(SEEDS_PER_PIT);
+            playerScore = 0;
+            cpuScore = 0;
+            isPlayerTurn = true;
+            gameActive = true;
+            
+            renderBoardData();
+            updateUI();
+        }
+
+        // Build HTML pits dynamically to ensure index tracking matches logic loop
+        function renderBoardData() {
+            playerRowEl.innerHTML = '';
+            cpuRowEl.innerHTML = '';
+
+            // Render Player Pits (0 to 6)
+            for (let i = 0; i < 7; i++) {
+                playerRowEl.appendChild(createPitElement(i, 'player-pit'));
+            }
+
+            // Render CPU Pits (7 to 13)
+            // Note: Flexbox flex-direction: row-reverse handles visual counter-clockwise wrap
+            for (let i = 7; i < 14; i++) {
+                cpuRowEl.appendChild(createPitElement(i, 'cpu-pit'));
+            }
+        }
+
+        function createPitElement(index, className) {
+            const pit = document.createElement('div');
+            pit.className = `pit ${className}`;
+            pit.dataset.index = index;
+            
+            const seedCount = document.createElement('span');
+            seedCount.className = 'seed-count';
+            seedCount.id = `count-${index}`;
+            pit.appendChild(seedCount);
+
+            const seedsContainer = document.createElement('div');
+            seedsContainer.className = 'seeds-container';
+            seedsContainer.id = `seeds-container-${index}`;
+            pit.appendChild(seedsContainer);
+
+            if (className === 'player-pit') {
+                pit.addEventListener('click', () => handlePitClick(index));
+            }
+
+            return pit;
+        }
+
+        // Redraw states, seed numbers and counts
+        function updateUI() {
+            for (let i = 0; i < 14; i++) {
+                const pitEl = document.querySelector(`[data-index="${i}"]`);
+                const countEl = document.getElementById(`count-${i}`);
+                const containerEl = document.getElementById(`seeds-container-${i}`);
+                
+                const count = board[i];
+                countEl.textContent = count;
+
+                // Handle empty class styling
+                if (count === 0) {
+                    pitEl.classList.add('empty');
+                } else {
+                    pitEl.classList.remove('empty');
+                }
+
+                // Fill visual micro-seeds 
+                containerEl.innerHTML = '';
+                const visibleSeeds = Math.min(count, 12); // Cap visual rendering elements to keep neat
+                for (let s = 0; s < visibleSeeds; s++) {
+                    const seedNode = document.createElement('div');
+                    seedNode.className = 'seed';
+                    containerEl.appendChild(seedNode);
+                }
+            }
+
+            playerScoreEl.textContent = playerScore;
+            cpuScoreEl.textContent = cpuScore;
+
+            if (!gameActive) return;
+
+            if (isPlayerTurn) {
+                statusEl.textContent = "Your Turn! Choose a pit.";
+                statusEl.style.color = "var(--player-color)";
+            } else {
+                statusEl.textContent = "CPU is thinking...";
+                statusEl.style.color = "var(--cpu-color)";
+            }
+        }
+
+        // Logic processing for sowing mechanics
+        function handlePitClick(index) {
+            if (!gameActive || !isPlayerTurn || board[index] === 0 || index > 6) return;
+            executeTurn(index);
+        }
+
+        function executeTurn(startIndex) {
+            let seedsHand = board[startIndex];
+            board[startIndex] = 0;
+            
+            let currentIndex = startIndex;
+
+            // Simple loop function interval simulating slow seed drops
+            const sowInterval = setInterval(() => {
+                currentIndex = (currentIndex + 1) % 14;
+                board[currentIndex]++;
+                seedsHand--;
+                
+                updateUI();
+
+                if (seedsHand === 0) {
+                    clearInterval(sowInterval);
+                    // Check landing scenario rules
+                    handleTurnEnding(currentIndex);
+                }
+            }, 250);
+        }
+
+        function handleTurnEnding(lastIndex) {
+            // Traditional Vamana Gullu Empty Pit Landing Rule
+            // Check if the last seed hit an empty pit
+            // Note: because we just incremented it, it now has exactly 1 seed inside.
+            if (board[lastIndex] === 1) {
+                // It landed in an empty space! Check for captures.
+                
+                // Player capture scenario
+                if (isPlayerTurn && lastIndex >= 0 && lastIndex <= 6) {
+                    const oppositeIndex = 13 - lastIndex;
+                    if (board[oppositeIndex] > 0) {
+                        playerScore += board[oppositeIndex];
+                        board[oppositeIndex] = 0;
+                        statusEl.textContent = `Nice! You captured the opposite pit's seeds!`;
+                    }
+                } 
+                // CPU capture scenario
+                else if (!isPlayerTurn && lastIndex >= 7 && lastIndex <= 13) {
+                    const oppositeIndex = 13 - lastIndex;
+                    if (board[oppositeIndex] > 0) {
+                        cpuScore += board[oppositeIndex];
+                        board[oppositeIndex] = 0;
+                        statusEl.textContent = `CPU captured your seeds!`;
+                    }
+                }
+
+                // Turn finishes and transitions
+                checkGameEnd();
+                if (gameActive) {
+                    isPlayerTurn = !isPlayerTurn;
+                    updateUI();
+                    if (!isPlayerTurn) {
+                        setTimeout(makeCPUMove, 1200);
+                    }
+                }
+            } else {
+                // If the landing pit already had seeds, traditional continuous scoop rule kicks in.
+                // It scoops up everything in that pit and continues sowing.
+                setTimeout(() => {
+                    executeTurn(lastIndex);
+                }, 400);
+            }
+        }
+
+        // CPU Decision Engine
+        function makeCPUMove() {
+            if (!gameActive) return;
+
+            // Gather valid CPU indexes that aren't empty (7 to 13)
+            let validMoves = [];
+            for (let i = 7; i <= 13; i++) {
+                if (board[i] > 0) validMoves.push(i);
+            }
+
+            if (validMoves.length === 0) {
+                checkGameEnd();
+                return;
+            }
+
+            // Simple Smart Choice AI Strategy:
+            // Check if any move leads immediately to a capture landing. If not, pick a random valid one.
+            let chosenMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+            
+            for (let move of validMoves) {
+                let seeds = board[move];
+                let finalLandingIndex = (move + seeds) % 14;
+                // If it lands in an empty pit on its own side, prioritize it!
+                if (finalLandingIndex >= 7 && finalLandingIndex <= 13 && board[finalLandingIndex] === 0) {
+                    chosenMove = move;
+                    break;
+                }
+            }
+
+            executeTurn(chosenMove);
+        }
+
+        function checkGameEnd() {
+            let playerSideEmpty = board.slice(0, 7).every(val => val === 0);
+            let cpuSideEmpty = board.slice(7, 14).every(val => val === 0);
+
+            if (playerSideEmpty || cpuSideEmpty) {
+                gameActive = false;
+                
+                // Sweep any leftover seeds into respective scores
+                for (let i = 0; i < 7; i++) {
+                    playerScore += board[i];
+                    board[i] = 0;
+                }
+                for (let i = 7; i < 14; i++) {
+                    cpuScore += board[i];
+                    board[i] = 0;
+                }
+
+                updateUI();
+
+                if (playerScore > cpuScore) {
+                    statusEl.textContent = `🎉 Game Over! You win with ${playerScore} seeds!`;
+                    statusEl.style.color = "var(--player-color)";
+                } else if (cpuScore > playerScore) {
+                    statusEl.textContent = `Game Over. CPU wins with ${cpuScore} seeds.`;
+                    statusEl.style.color = "var(--cpu-color)";
+                } else {
+                    statusEl.textContent = `Game Over! It's an exact tie (${playerScore} - ${cpuScore})!`;
+                    statusEl.style.color = "#444";
+                }
+            }
+        }
+
+        resetBtn.addEventListener('click', initGame);
+
+        // Run on load
+        initGame();
+    </script>
+</body>
+</html>
