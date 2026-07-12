@@ -280,7 +280,7 @@
         .row-label.cpu { color: var(--cpu-color); }
         .row-label.player { color: var(--player-color); }
 
-        .ttt-board {
+        .vp-board {
             display: grid;
             grid-template-columns: repeat(3, minmax(70px, 100px));
             gap: 10px;
@@ -288,7 +288,7 @@
             margin-bottom: 20px;
         }
 
-        .ttt-cell {
+        .vp-cell {
             aspect-ratio: 1;
             border-radius: 14px;
             border: none;
@@ -299,11 +299,11 @@
             cursor: pointer;
         }
 
-        .ttt-cell:hover {
+        .vp-cell:hover {
             background: #e8d3a8;
         }
 
-        .ttt-cell.winner {
+        .vp-cell.winner {
             background: #c8f2cc;
         }
 
@@ -323,7 +323,7 @@
 
         <div class="game-nav" role="tablist" aria-label="Game selector">
             <button class="nav-btn active" data-game="vamana">Vamana Gullu</button>
-            <button class="nav-btn" data-game="tictactoe">Tic-Tac-Toe</button>
+            <button class="nav-btn" data-game="vaikunthapali">Vaikuntha Pali</button>
             <button class="nav-btn" data-game="coming-soon">More Games</button>
         </div>
 
@@ -365,15 +365,27 @@
             </div>
         </section>
 
-        <section class="game-section" id="game-tictactoe">
+        <section class="game-section" id="game-vaikunthapali">
             <div class="game-card">
-                <h2 class="section-title">Tic-Tac-Toe</h2>
-                <p class="section-description">A quick two-player-style challenge with a simple computer opponent.</p>
+                <h2 class="section-title">Vaikuntha Pali</h2>
+                <p class="section-description">A simple two-player challenge where you face the CPU on a 3x3 board.</p>
                 <div class="controls">
-                    <button id="ttt-reset-btn" type="button">Restart Game</button>
+                    <button id="vp-instructions-btn" type="button">Instructions</button>
+                    <button id="vp-reset-btn" type="button">Restart Game</button>
                 </div>
-                <div id="ttt-status" class="status-msg">Your turn: X</div>
-                <div id="ttt-board" class="ttt-board"></div>
+
+                <div id="vp-instructions" class="instructions hidden">
+                    <h3>How to Play</h3>
+                    <ul>
+                        <li>Take turns placing your marker in an empty square.</li>
+                        <li>Try to make three in a row horizontally, vertically, or diagonally.</li>
+                        <li>The CPU plays as the second player and responds automatically.</li>
+                        <li>The first player to complete a line wins the round.</li>
+                    </ul>
+                </div>
+
+                <div id="vp-status" class="status-msg">Your turn: You (X)</div>
+                <div id="vp-board" class="vp-board"></div>
             </div>
         </section>
 
@@ -388,7 +400,7 @@
             </div>
         </section>
 
-        <div class="footer-note">Game developed by Sita Bharathala</div>
+        <div class="footer-note">Developed by Sita Bharathala</div>
     </div>
 
     <script>
@@ -630,22 +642,30 @@
             initGame();
         }
 
-        function setupTicTacToe() {
-            const boardEl = document.getElementById('ttt-board');
-            const statusEl = document.getElementById('ttt-status');
-            const resetBtn = document.getElementById('ttt-reset-btn');
+        function setupVaikunthaPaliGame() {
+            const boardEl = document.getElementById('vp-board');
+            const statusEl = document.getElementById('vp-status');
+            const resetBtn = document.getElementById('vp-reset-btn');
+            const instructionsBtn = document.getElementById('vp-instructions-btn');
+            const instructionsEl = document.getElementById('vp-instructions');
             let board = Array(9).fill('');
-            let currentPlayer = 'X';
             let gameActive = true;
+            let humanTurn = true;
+
+            const winningLines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
 
             function renderBoard() {
                 boardEl.innerHTML = '';
                 board.forEach((value, index) => {
                     const cell = document.createElement('button');
-                    cell.className = 'ttt-cell';
+                    cell.className = 'vp-cell';
                     cell.textContent = value;
                     cell.addEventListener('click', () => handleCellClick(index));
-                    if (value) {
+                    if (value || !gameActive || !humanTurn) {
                         cell.disabled = true;
                     }
                     boardEl.appendChild(cell);
@@ -657,12 +677,6 @@
             }
 
             function checkWinner() {
-                const winningLines = [
-                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                    [0, 4, 8], [2, 4, 6]
-                ];
-
                 for (const [a, b, c] of winningLines) {
                     if (board[a] && board[a] === board[b] && board[a] === board[c]) {
                         return { winner: board[a], line: [a, b, c] };
@@ -675,69 +689,101 @@
                 return null;
             }
 
-            function handleCellClick(index) {
-                if (!gameActive || board[index] !== '') return;
+            function finishGame(result) {
+                gameActive = false;
+                if (result.winner === 'draw') {
+                    updateStatus('It\'s a draw!');
+                } else {
+                    updateStatus(`Winner: ${result.winner === 'X' ? 'You' : 'CPU'}`);
+                }
+            }
 
-                board[index] = currentPlayer;
+            function handleCellClick(index) {
+                if (!gameActive || !humanTurn || board[index] !== '') return;
+
+                board[index] = 'X';
                 renderBoard();
 
                 const result = checkWinner();
                 if (result) {
-                    if (result.winner === 'draw') {
-                        updateStatus('It\'s a draw!');
-                    } else {
-                        updateStatus(`Winner: ${result.winner}`);
-                    }
-                    gameActive = false;
+                    finishGame(result);
                     return;
                 }
 
-                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-                updateStatus(`Your turn: ${currentPlayer}`);
-
-                if (currentPlayer === 'O') {
-                    setTimeout(makeComputerMove, 400);
-                }
+                humanTurn = false;
+                updateStatus('CPU is thinking...');
+                setTimeout(makeComputerMove, 400);
             }
 
             function makeComputerMove() {
-                if (!gameActive) return;
-                const emptyCells = board.map((value, index) => value === '' ? index : null).filter(index => index !== null);
-                if (emptyCells.length === 0) return;
+                if (!gameActive || humanTurn) return;
 
-                const move = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                board[move] = 'O';
+                const bestMove = findBestMove();
+                if (bestMove === null) {
+                    finishGame({ winner: 'draw' });
+                    return;
+                }
+
+                board[bestMove] = 'O';
                 renderBoard();
 
                 const result = checkWinner();
                 if (result) {
-                    if (result.winner === 'draw') {
-                        updateStatus('It\'s a draw!');
-                    } else {
-                        updateStatus(`Winner: ${result.winner}`);
-                    }
-                    gameActive = false;
+                    finishGame(result);
                     return;
                 }
 
-                currentPlayer = 'X';
-                updateStatus('Your turn: X');
+                humanTurn = true;
+                updateStatus('Your turn: You (X)');
             }
+
+            function findBestMove() {
+                const winningMove = getMoveForPlayer('O');
+                if (winningMove !== null) return winningMove;
+
+                const blockingMove = getMoveForPlayer('X');
+                if (blockingMove !== null) return blockingMove;
+
+                const center = 4;
+                if (board[center] === '') return center;
+
+                const corners = [0, 2, 6, 8].filter(index => board[index] === '');
+                if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+
+                const empties = board.map((value, index) => value === '' ? index : null).filter(index => index !== null);
+                return empties.length ? empties[Math.floor(Math.random() * empties.length)] : null;
+            }
+
+            function getMoveForPlayer(player) {
+                for (const [a, b, c] of winningLines) {
+                    const values = [board[a], board[b], board[c]];
+                    const empties = values.filter(value => value === '');
+                    if (empties.length === 1 && values.filter(value => value === player).length === 2) {
+                        return [a, b, c][values.indexOf('')];
+                    }
+                }
+                return null;
+            }
+
+            instructionsBtn.addEventListener('click', () => {
+                instructionsEl.classList.toggle('hidden');
+                instructionsBtn.textContent = instructionsEl.classList.contains('hidden') ? 'Instructions' : 'Hide Instructions';
+            });
 
             resetBtn.addEventListener('click', () => {
                 board = Array(9).fill('');
-                currentPlayer = 'X';
                 gameActive = true;
+                humanTurn = true;
                 renderBoard();
-                updateStatus('Your turn: X');
+                updateStatus('Your turn: You (X)');
             });
 
             renderBoard();
-            updateStatus('Your turn: X');
+            updateStatus('Your turn: You (X)');
         }
 
         setupVamanaGame();
-        setupTicTacToe();
+        setupVaikunthaPaliGame();
         showGame('vamana');
     </script>
 </body>
