@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vamana Gullu by Sita Bharathala</title>
+    <title>Games Hub</title>
     <style>
         :root {
             --bg-color: #f7f5f0;
@@ -12,41 +12,131 @@
             --player-color: #2e7d32;
             --cpu-color: #c62828;
             --text-color: #2c1e11;
+            --accent: #5b3d2a;
+            --panel: #ffffff;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
+            background: linear-gradient(135deg, #f7f5f0 0%, #efe4d0 100%);
             color: var(--text-color);
             margin: 0;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             min-height: 100vh;
         }
 
+        .app-shell {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--panel);
+            border-radius: 20px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+            padding: 24px;
+        }
+
         h1 {
-            margin-bottom: 5px;
+            margin: 0 0 8px;
             color: var(--board-color);
             text-align: center;
+            font-size: 2rem;
         }
 
         .subtitle {
-            margin-top: 0;
-            margin-bottom: 25px;
-            font-style: italic;
-            color: #666;
+            margin: 0 0 20px;
             text-align: center;
+            color: #6f604e;
+            font-size: 1rem;
         }
 
-        .game-container {
-            width: 100%;
-            max-width: 800px;
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        .game-nav {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .nav-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #efe2c7;
+            color: var(--accent);
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active,
+        .nav-btn:hover {
+            background: var(--board-color);
+            color: white;
+        }
+
+        .game-section {
+            display: none;
+        }
+
+        .game-section.active {
+            display: block;
+        }
+
+        .game-card {
+            border: 1px solid #eadbb9;
+            border-radius: 16px;
+            background: #fcfaf6;
+            padding: 22px;
+        }
+
+        .section-title {
+            margin-top: 0;
+            color: var(--board-color);
+            margin-bottom: 8px;
+        }
+
+        .section-description {
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: #6f604e;
+        }
+
+        .coming-soon {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #f8f0e3, #efe1c7);
+            border-radius: 16px;
+            color: var(--accent);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        button {
+            background-color: var(--board-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #6e441f;
+        }
+
+        button:active {
+            transform: scale(0.98);
         }
 
         .scoreboard {
@@ -68,7 +158,7 @@
             font-size: 1.2rem;
             font-weight: bold;
             margin-bottom: 20px;
-            height: 30px;
+            min-height: 30px;
             color: #444;
         }
 
@@ -100,7 +190,6 @@
             margin-bottom: 6px;
         }
 
-        /* Mancala Board Layout */
         .board-wrapper {
             display: flex;
             align-items: center;
@@ -125,9 +214,8 @@
             gap: 12px;
         }
 
-        /* Row orientations for counterclockwise play visualization */
-        .row.cpu-row { flex-direction: row-reverse; } /* CPU row index visually reverses right-to-left */
-        .row.player-row { flex-direction: row; }      /* Player row visually goes left-to-right */
+        .row.cpu-row { flex-direction: row-reverse; }
+        .row.player-row { flex-direction: row; }
 
         .pit {
             flex: 1;
@@ -145,22 +233,12 @@
             user-select: none;
         }
 
-        .pit.cpu-pit {
-            cursor: not-allowed;
-        }
-
+        .pit.cpu-pit { cursor: not-allowed; }
         .pit.player-pit:hover:not(.empty) {
             transform: scale(1.05);
             box-shadow: inset 0 5px 10px rgba(0,0,0,0.8), 0 0 12px #fff;
         }
-
-        .pit.empty {
-            cursor: not-allowed;
-        }
-
-        .pit.active-turn-row {
-            border: 2px solid rgba(255, 255, 255, 0.4);
-        }
+        .pit.empty { cursor: not-allowed; }
 
         .seed-count {
             color: white;
@@ -170,7 +248,6 @@
             text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
 
-        /* Tiny visual seeds inside the pits */
         .seeds-container {
             position: absolute;
             width: 70%;
@@ -192,35 +269,6 @@
             box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            background-color: var(--board-color);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #6e441f;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        /* Labels indicating whose side is whose */
         .row-label {
             text-align: center;
             font-size: 0.9rem;
@@ -231,312 +279,466 @@
         }
         .row-label.cpu { color: var(--cpu-color); }
         .row-label.player { color: var(--player-color); }
+
+        .ttt-board {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(70px, 100px));
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .ttt-cell {
+            aspect-ratio: 1;
+            border-radius: 14px;
+            border: none;
+            background: #f2e4c7;
+            color: var(--accent);
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .ttt-cell:hover {
+            background: #e8d3a8;
+        }
+
+        .ttt-cell.winner {
+            background: #c8f2cc;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            text-align: center;
+            color: #7a6b58;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
+    <div class="app-shell">
+        <h1>Games Hub</h1>
+        <p class="subtitle">Play a variety of classic games in one place.</p>
 
-    <h1>Vamana Gullu</h1>
-    <div class="subtitle">Traditional 14-Pit Board Game</div>
-
-    <div class="game-container">
-        <div class="scoreboard">
-            <div class="score player">Your Captures: <span id="player-score">0</span></div>
-            <div class="score cpu">CPU Captures: <span id="cpu-score">0</span></div>
+        <div class="game-nav" role="tablist" aria-label="Game selector">
+            <button class="nav-btn active" data-game="vamana">Vamana Gullu</button>
+            <button class="nav-btn" data-game="tictactoe">Tic-Tac-Toe</button>
+            <button class="nav-btn" data-game="coming-soon">More Games</button>
         </div>
 
-        <div id="status" class="status-msg">Your turn! Select a pit.</div>
+        <section class="game-section active" id="game-vamana">
+            <div class="game-card">
+                <h2 class="section-title">Vamana Gullu</h2>
+                <p class="section-description">A classic board game with turn-based sowing and captures.</p>
+                <div class="controls">
+                    <button id="instructions-btn" type="button">Instructions</button>
+                    <button id="reset-btn" type="button">Restart Game</button>
+                </div>
 
-        <div class="controls">
-            <button id="instructions-btn" type="button">Instructions</button>
-            <button id="reset-btn" type="button">Restart Game</button>
-        </div>
+                <div id="instructions" class="instructions hidden">
+                    <h3>How to Play</h3>
+                    <ul>
+                        <li>Each pit starts with 5 seeds, and your side is the bottom row.</li>
+                        <li>On your turn, click any non-empty pit on your side to sow the seeds counter-clockwise.</li>
+                        <li>If the last seed lands in a pit that already has seeds, the sowing continues from there.</li>
+                        <li>If the last seed lands in an empty pit on your side, you capture the seeds from the opposite pit on the CPU side.</li>
+                        <li>The game ends when one row is empty; the player with the most captured seeds wins.</li>
+                    </ul>
+                </div>
 
-        <div id="instructions" class="instructions hidden">
-            <h3>How to Play</h3>
-            <ul>
-                <li>Each pit starts with 5 seeds, and your side is the bottom row.</li>
-                <li>On your turn, click any non-empty pit on your side to sow the seeds counter-clockwise.</li>
-                <li>If the last seed lands in a pit that already has seeds, the sowing continues from there.</li>
-                <li>If the last seed lands in an empty pit on your side, you capture the seeds from the opposite pit on the CPU side.</li>
-                <li>The game ends when one row is empty; the player with the most captured seeds wins.</li>
-            </ul>
-        </div>
+                <div class="scoreboard">
+                    <div class="score player">Your Captures: <span id="player-score">0</span></div>
+                    <div class="score cpu">CPU Captures: <span id="cpu-score">0</span></div>
+                </div>
 
-        <div class="row-label cpu">CPU Side (Counter-Clockwise ◄)</div>
-        <div class="board-wrapper">
-            <div class="pits-grid">
-                <div class="row cpu-row" id="cpu-pits-container"></div>
-                
-                <div class="row player-row" id="player-pits-container"></div>
+                <div id="status" class="status-msg">Your turn! Select a pit.</div>
+
+                <div class="row-label cpu">CPU Side (Counter-Clockwise ◄)</div>
+                <div class="board-wrapper">
+                    <div class="pits-grid">
+                        <div class="row cpu-row" id="cpu-pits-container"></div>
+                        <div class="row player-row" id="player-pits-container"></div>
+                    </div>
+                </div>
+                <div class="row-label player">Your Side (Counter-Clockwise ►)</div>
             </div>
-        </div>
-        <div class="row-label player">Your Side (Counter-Clockwise ►)</div>
+        </section>
 
-        <div style="margin-top: 18px; text-align: center; color: #7a6b58; font-size: 0.95rem; font-style: italic;">
-            Game developed by Sita Bharathala
-        </div>
+        <section class="game-section" id="game-tictactoe">
+            <div class="game-card">
+                <h2 class="section-title">Tic-Tac-Toe</h2>
+                <p class="section-description">A quick two-player-style challenge with a simple computer opponent.</p>
+                <div class="controls">
+                    <button id="ttt-reset-btn" type="button">Restart Game</button>
+                </div>
+                <div id="ttt-status" class="status-msg">Your turn: X</div>
+                <div id="ttt-board" class="ttt-board"></div>
+            </div>
+        </section>
+
+        <section class="game-section" id="game-coming-soon">
+            <div class="game-card">
+                <h2 class="section-title">More Games</h2>
+                <p class="section-description">This hub is ready for new games such as Sudoku, Snake, or Memory Match.</p>
+                <div class="coming-soon">
+                    <h3>More games are on the way.</h3>
+                    <p>Use this structure to add new games whenever you want.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="footer-note">Game developed by Sita Bharathala</div>
     </div>
 
     <script>
-        // Game State
-        // Array representation of the board loop (14 pits total)
-        // Indices 0-6: Player pits (left to right)
-        // Indices 7-13: CPU pits (right to left)
-        let board = [];
-        let playerScore = 0;
-        let cpuScore = 0;
-        let isPlayerTurn = true;
-        let gameActive = true;
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const gameSections = document.querySelectorAll('.game-section');
 
-        const SEEDS_PER_PIT = 5;
+        function showGame(gameId) {
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.game === gameId);
+            });
 
-        // Domestic Elements mappings
-        const playerRowEl = document.getElementById('player-pits-container');
-        const cpuRowEl = document.getElementById('cpu-pits-container');
-        const playerScoreEl = document.getElementById('player-score');
-        const cpuScoreEl = document.getElementById('cpu-score');
-        const statusEl = document.getElementById('status');
-        const instructionsBtn = document.getElementById('instructions-btn');
-        const instructionsEl = document.getElementById('instructions');
-        const resetBtn = document.getElementById('reset-btn');
-
-        // Initialize Game
-        function initGame() {
-            board = Array(14).fill(SEEDS_PER_PIT);
-            playerScore = 0;
-            cpuScore = 0;
-            isPlayerTurn = true;
-            gameActive = true;
-            
-            renderBoardData();
-            updateUI();
+            gameSections.forEach(section => {
+                section.classList.toggle('active', section.id === `game-${gameId}`);
+            });
         }
 
-        // Build HTML pits dynamically to ensure index tracking matches logic loop
-        function renderBoardData() {
-            playerRowEl.innerHTML = '';
-            cpuRowEl.innerHTML = '';
-
-            // Render Player Pits (0 to 6)
-            for (let i = 0; i < 7; i++) {
-                playerRowEl.appendChild(createPitElement(i, 'player-pit'));
-            }
-
-            // Render CPU Pits (7 to 13)
-            // Note: Flexbox flex-direction: row-reverse handles visual counter-clockwise wrap
-            for (let i = 7; i < 14; i++) {
-                cpuRowEl.appendChild(createPitElement(i, 'cpu-pit'));
-            }
-        }
-
-        function createPitElement(index, className) {
-            const pit = document.createElement('div');
-            pit.className = `pit ${className}`;
-            pit.dataset.index = index;
-            
-            const seedCount = document.createElement('span');
-            seedCount.className = 'seed-count';
-            seedCount.id = `count-${index}`;
-            pit.appendChild(seedCount);
-
-            const seedsContainer = document.createElement('div');
-            seedsContainer.className = 'seeds-container';
-            seedsContainer.id = `seeds-container-${index}`;
-            pit.appendChild(seedsContainer);
-
-            if (className === 'player-pit') {
-                pit.addEventListener('click', () => handlePitClick(index));
-            }
-
-            return pit;
-        }
-
-        // Redraw states, seed numbers and counts
-        function updateUI() {
-            for (let i = 0; i < 14; i++) {
-                const pitEl = document.querySelector(`[data-index="${i}"]`);
-                const countEl = document.getElementById(`count-${i}`);
-                const containerEl = document.getElementById(`seeds-container-${i}`);
-                
-                const count = board[i];
-                countEl.textContent = count;
-
-                // Handle empty class styling
-                if (count === 0) {
-                    pitEl.classList.add('empty');
-                } else {
-                    pitEl.classList.remove('empty');
-                }
-
-                // Fill visual micro-seeds 
-                containerEl.innerHTML = '';
-                const visibleSeeds = Math.min(count, 12); // Cap visual rendering elements to keep neat
-                for (let s = 0; s < visibleSeeds; s++) {
-                    const seedNode = document.createElement('div');
-                    seedNode.className = 'seed';
-                    containerEl.appendChild(seedNode);
-                }
-            }
-
-            playerScoreEl.textContent = playerScore;
-            cpuScoreEl.textContent = cpuScore;
-
-            if (!gameActive) return;
-
-            if (isPlayerTurn) {
-                statusEl.textContent = "Your Turn! Choose a pit.";
-                statusEl.style.color = "var(--player-color)";
-            } else {
-                statusEl.textContent = "CPU is thinking...";
-                statusEl.style.color = "var(--cpu-color)";
-            }
-        }
-
-        // Logic processing for sowing mechanics
-        function handlePitClick(index) {
-            if (!gameActive || !isPlayerTurn || board[index] === 0 || index > 6) return;
-            executeTurn(index);
-        }
-
-        function executeTurn(startIndex) {
-            let seedsHand = board[startIndex];
-            board[startIndex] = 0;
-            
-            let currentIndex = startIndex;
-
-            // Simple loop function interval simulating slow seed drops
-            const sowInterval = setInterval(() => {
-                currentIndex = (currentIndex + 1) % 14;
-                board[currentIndex]++;
-                seedsHand--;
-                
-                updateUI();
-
-                if (seedsHand === 0) {
-                    clearInterval(sowInterval);
-                    // Check landing scenario rules
-                    handleTurnEnding(currentIndex);
-                }
-            }, 250);
-        }
-
-        function handleTurnEnding(lastIndex) {
-            // Traditional Vamana Gullu Empty Pit Landing Rule
-            // Check if the last seed hit an empty pit
-            // Note: because we just incremented it, it now has exactly 1 seed inside.
-            if (board[lastIndex] === 1) {
-                // It landed in an empty space! Check for captures.
-                
-                // Player capture scenario
-                if (isPlayerTurn && lastIndex >= 0 && lastIndex <= 6) {
-                    const oppositeIndex = 13 - lastIndex;
-                    if (board[oppositeIndex] > 0) {
-                        playerScore += board[oppositeIndex];
-                        board[oppositeIndex] = 0;
-                        statusEl.textContent = `Nice! You captured the opposite pit's seeds!`;
-                    }
-                } 
-                // CPU capture scenario
-                else if (!isPlayerTurn && lastIndex >= 7 && lastIndex <= 13) {
-                    const oppositeIndex = 13 - lastIndex;
-                    if (board[oppositeIndex] > 0) {
-                        cpuScore += board[oppositeIndex];
-                        board[oppositeIndex] = 0;
-                        statusEl.textContent = `CPU captured your seeds!`;
-                    }
-                }
-
-                // Turn finishes and transitions
-                checkGameEnd();
-                if (gameActive) {
-                    isPlayerTurn = !isPlayerTurn;
-                    updateUI();
-                    if (!isPlayerTurn) {
-                        setTimeout(makeCPUMove, 1200);
-                    }
-                }
-            } else {
-                // If the landing pit already had seeds, traditional continuous scoop rule kicks in.
-                // It scoops up everything in that pit and continues sowing.
-                setTimeout(() => {
-                    executeTurn(lastIndex);
-                }, 400);
-            }
-        }
-
-        // CPU Decision Engine
-        function makeCPUMove() {
-            if (!gameActive) return;
-
-            // Gather valid CPU indexes that aren't empty (7 to 13)
-            let validMoves = [];
-            for (let i = 7; i <= 13; i++) {
-                if (board[i] > 0) validMoves.push(i);
-            }
-
-            if (validMoves.length === 0) {
-                checkGameEnd();
-                return;
-            }
-
-            // Simple Smart Choice AI Strategy:
-            // Check if any move leads immediately to a capture landing. If not, pick a random valid one.
-            let chosenMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-            
-            for (let move of validMoves) {
-                let seeds = board[move];
-                let finalLandingIndex = (move + seeds) % 14;
-                // If it lands in an empty pit on its own side, prioritize it!
-                if (finalLandingIndex >= 7 && finalLandingIndex <= 13 && board[finalLandingIndex] === 0) {
-                    chosenMove = move;
-                    break;
-                }
-            }
-
-            executeTurn(chosenMove);
-        }
-
-        function checkGameEnd() {
-            let playerSideEmpty = board.slice(0, 7).every(val => val === 0);
-            let cpuSideEmpty = board.slice(7, 14).every(val => val === 0);
-
-            if (playerSideEmpty || cpuSideEmpty) {
-                gameActive = false;
-                
-                // Sweep any leftover seeds into respective scores
-                for (let i = 0; i < 7; i++) {
-                    playerScore += board[i];
-                    board[i] = 0;
-                }
-                for (let i = 7; i < 14; i++) {
-                    cpuScore += board[i];
-                    board[i] = 0;
-                }
-
-                updateUI();
-
-                if (playerScore > cpuScore) {
-                    statusEl.textContent = `🎉 Game Over! You win with ${playerScore} seeds!`;
-                    statusEl.style.color = "var(--player-color)";
-                } else if (cpuScore > playerScore) {
-                    statusEl.textContent = `Game Over. CPU wins with ${cpuScore} seeds.`;
-                    statusEl.style.color = "var(--cpu-color)";
-                } else {
-                    statusEl.textContent = `Game Over! It's an exact tie (${playerScore} - ${cpuScore})!`;
-                    statusEl.style.color = "#444";
-                }
-            }
-        }
-
-        instructionsBtn.addEventListener('click', () => {
-            instructionsEl.classList.toggle('hidden');
-            instructionsBtn.textContent = instructionsEl.classList.contains('hidden') ? 'Instructions' : 'Hide Instructions';
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', () => showGame(btn.dataset.game));
         });
 
-        resetBtn.addEventListener('click', initGame);
+        function setupVamanaGame() {
+            let board = [];
+            let playerScore = 0;
+            let cpuScore = 0;
+            let isPlayerTurn = true;
+            let gameActive = true;
+            const SEEDS_PER_PIT = 5;
 
-        // Run on load
-        initGame();
+            const playerRowEl = document.getElementById('player-pits-container');
+            const cpuRowEl = document.getElementById('cpu-pits-container');
+            const playerScoreEl = document.getElementById('player-score');
+            const cpuScoreEl = document.getElementById('cpu-score');
+            const statusEl = document.getElementById('status');
+            const instructionsBtn = document.getElementById('instructions-btn');
+            const instructionsEl = document.getElementById('instructions');
+            const resetBtn = document.getElementById('reset-btn');
+
+            function initGame() {
+                board = Array(14).fill(SEEDS_PER_PIT);
+                playerScore = 0;
+                cpuScore = 0;
+                isPlayerTurn = true;
+                gameActive = true;
+                renderBoardData();
+                updateUI();
+            }
+
+            function renderBoardData() {
+                playerRowEl.innerHTML = '';
+                cpuRowEl.innerHTML = '';
+
+                for (let i = 0; i < 7; i++) {
+                    playerRowEl.appendChild(createPitElement(i, 'player-pit'));
+                }
+
+                for (let i = 7; i < 14; i++) {
+                    cpuRowEl.appendChild(createPitElement(i, 'cpu-pit'));
+                }
+            }
+
+            function createPitElement(index, className) {
+                const pit = document.createElement('div');
+                pit.className = `pit ${className}`;
+                pit.dataset.index = index;
+
+                const seedCount = document.createElement('span');
+                seedCount.className = 'seed-count';
+                seedCount.id = `count-${index}`;
+                pit.appendChild(seedCount);
+
+                const seedsContainer = document.createElement('div');
+                seedsContainer.className = 'seeds-container';
+                seedsContainer.id = `seeds-container-${index}`;
+                pit.appendChild(seedsContainer);
+
+                if (className === 'player-pit') {
+                    pit.addEventListener('click', () => handlePitClick(index));
+                }
+
+                return pit;
+            }
+
+            function updateUI() {
+                for (let i = 0; i < 14; i++) {
+                    const pitEl = document.querySelector(`[data-index="${i}"]`);
+                    const countEl = document.getElementById(`count-${i}`);
+                    const containerEl = document.getElementById(`seeds-container-${i}`);
+                    const count = board[i];
+                    countEl.textContent = count;
+
+                    if (count === 0) {
+                        pitEl.classList.add('empty');
+                    } else {
+                        pitEl.classList.remove('empty');
+                    }
+
+                    containerEl.innerHTML = '';
+                    const visibleSeeds = Math.min(count, 12);
+                    for (let s = 0; s < visibleSeeds; s++) {
+                        const seedNode = document.createElement('div');
+                        seedNode.className = 'seed';
+                        containerEl.appendChild(seedNode);
+                    }
+                }
+
+                playerScoreEl.textContent = playerScore;
+                cpuScoreEl.textContent = cpuScore;
+
+                if (!gameActive) return;
+
+                if (isPlayerTurn) {
+                    statusEl.textContent = 'Your turn! Choose a pit.';
+                    statusEl.style.color = 'var(--player-color)';
+                } else {
+                    statusEl.textContent = 'CPU is thinking...';
+                    statusEl.style.color = 'var(--cpu-color)';
+                }
+            }
+
+            function handlePitClick(index) {
+                if (!gameActive || !isPlayerTurn || board[index] === 0 || index > 6) return;
+                executeTurn(index);
+            }
+
+            function executeTurn(startIndex) {
+                let seedsHand = board[startIndex];
+                board[startIndex] = 0;
+                let currentIndex = startIndex;
+
+                const sowInterval = setInterval(() => {
+                    currentIndex = (currentIndex + 1) % 14;
+                    board[currentIndex]++;
+                    seedsHand--;
+                    updateUI();
+
+                    if (seedsHand === 0) {
+                        clearInterval(sowInterval);
+                        handleTurnEnding(currentIndex);
+                    }
+                }, 250);
+            }
+
+            function handleTurnEnding(lastIndex) {
+                if (board[lastIndex] === 1) {
+                    if (isPlayerTurn && lastIndex >= 0 && lastIndex <= 6) {
+                        const oppositeIndex = 13 - lastIndex;
+                        if (board[oppositeIndex] > 0) {
+                            playerScore += board[oppositeIndex];
+                            board[oppositeIndex] = 0;
+                            statusEl.textContent = 'Nice! You captured the opposite pit\'s seeds!';
+                        }
+                    } else if (!isPlayerTurn && lastIndex >= 7 && lastIndex <= 13) {
+                        const oppositeIndex = 13 - lastIndex;
+                        if (board[oppositeIndex] > 0) {
+                            cpuScore += board[oppositeIndex];
+                            board[oppositeIndex] = 0;
+                            statusEl.textContent = 'CPU captured your seeds!';
+                        }
+                    }
+
+                    checkGameEnd();
+                    if (gameActive) {
+                        isPlayerTurn = !isPlayerTurn;
+                        updateUI();
+                        if (!isPlayerTurn) {
+                            setTimeout(makeCPUMove, 1200);
+                        }
+                    }
+                } else {
+                    setTimeout(() => {
+                        executeTurn(lastIndex);
+                    }, 400);
+                }
+            }
+
+            function makeCPUMove() {
+                if (!gameActive) return;
+
+                const validMoves = [];
+                for (let i = 7; i <= 13; i++) {
+                    if (board[i] > 0) validMoves.push(i);
+                }
+
+                if (validMoves.length === 0) {
+                    checkGameEnd();
+                    return;
+                }
+
+                let chosenMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                for (const move of validMoves) {
+                    const seeds = board[move];
+                    const finalLandingIndex = (move + seeds) % 14;
+                    if (finalLandingIndex >= 7 && finalLandingIndex <= 13 && board[finalLandingIndex] === 0) {
+                        chosenMove = move;
+                        break;
+                    }
+                }
+
+                executeTurn(chosenMove);
+            }
+
+            function checkGameEnd() {
+                const playerSideEmpty = board.slice(0, 7).every(val => val === 0);
+                const cpuSideEmpty = board.slice(7, 14).every(val => val === 0);
+
+                if (playerSideEmpty || cpuSideEmpty) {
+                    gameActive = false;
+
+                    for (let i = 0; i < 7; i++) {
+                        playerScore += board[i];
+                        board[i] = 0;
+                    }
+                    for (let i = 7; i < 14; i++) {
+                        cpuScore += board[i];
+                        board[i] = 0;
+                    }
+
+                    updateUI();
+
+                    if (playerScore > cpuScore) {
+                        statusEl.textContent = `🎉 Game Over! You win with ${playerScore} seeds!`;
+                        statusEl.style.color = 'var(--player-color)';
+                    } else if (cpuScore > playerScore) {
+                        statusEl.textContent = `Game Over. CPU wins with ${cpuScore} seeds.`;
+                        statusEl.style.color = 'var(--cpu-color)';
+                    } else {
+                        statusEl.textContent = `Game Over! It's an exact tie (${playerScore} - ${cpuScore})!`;
+                        statusEl.style.color = '#444';
+                    }
+                }
+            }
+
+            instructionsBtn.addEventListener('click', () => {
+                instructionsEl.classList.toggle('hidden');
+                instructionsBtn.textContent = instructionsEl.classList.contains('hidden') ? 'Instructions' : 'Hide Instructions';
+            });
+
+            resetBtn.addEventListener('click', initGame);
+            initGame();
+        }
+
+        function setupTicTacToe() {
+            const boardEl = document.getElementById('ttt-board');
+            const statusEl = document.getElementById('ttt-status');
+            const resetBtn = document.getElementById('ttt-reset-btn');
+            let board = Array(9).fill('');
+            let currentPlayer = 'X';
+            let gameActive = true;
+
+            function renderBoard() {
+                boardEl.innerHTML = '';
+                board.forEach((value, index) => {
+                    const cell = document.createElement('button');
+                    cell.className = 'ttt-cell';
+                    cell.textContent = value;
+                    cell.addEventListener('click', () => handleCellClick(index));
+                    if (value) {
+                        cell.disabled = true;
+                    }
+                    boardEl.appendChild(cell);
+                });
+            }
+
+            function updateStatus(message) {
+                statusEl.textContent = message;
+            }
+
+            function checkWinner() {
+                const winningLines = [
+                    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                    [0, 4, 8], [2, 4, 6]
+                ];
+
+                for (const [a, b, c] of winningLines) {
+                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                        return { winner: board[a], line: [a, b, c] };
+                    }
+                }
+
+                if (board.every(Boolean)) {
+                    return { winner: 'draw' };
+                }
+                return null;
+            }
+
+            function handleCellClick(index) {
+                if (!gameActive || board[index] !== '') return;
+
+                board[index] = currentPlayer;
+                renderBoard();
+
+                const result = checkWinner();
+                if (result) {
+                    if (result.winner === 'draw') {
+                        updateStatus('It\'s a draw!');
+                    } else {
+                        updateStatus(`Winner: ${result.winner}`);
+                    }
+                    gameActive = false;
+                    return;
+                }
+
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateStatus(`Your turn: ${currentPlayer}`);
+
+                if (currentPlayer === 'O') {
+                    setTimeout(makeComputerMove, 400);
+                }
+            }
+
+            function makeComputerMove() {
+                if (!gameActive) return;
+                const emptyCells = board.map((value, index) => value === '' ? index : null).filter(index => index !== null);
+                if (emptyCells.length === 0) return;
+
+                const move = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                board[move] = 'O';
+                renderBoard();
+
+                const result = checkWinner();
+                if (result) {
+                    if (result.winner === 'draw') {
+                        updateStatus('It\'s a draw!');
+                    } else {
+                        updateStatus(`Winner: ${result.winner}`);
+                    }
+                    gameActive = false;
+                    return;
+                }
+
+                currentPlayer = 'X';
+                updateStatus('Your turn: X');
+            }
+
+            resetBtn.addEventListener('click', () => {
+                board = Array(9).fill('');
+                currentPlayer = 'X';
+                gameActive = true;
+                renderBoard();
+                updateStatus('Your turn: X');
+            });
+
+            renderBoard();
+            updateStatus('Your turn: X');
+        }
+
+        setupVamanaGame();
+        setupTicTacToe();
+        showGame('vamana');
     </script>
 </body>
 </html>
