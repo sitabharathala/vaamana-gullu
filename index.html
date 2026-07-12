@@ -280,31 +280,171 @@
         .row-label.cpu { color: var(--cpu-color); }
         .row-label.player { color: var(--player-color); }
 
-        .vp-board {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(70px, 100px));
-            gap: 10px;
+        .vp-game-shell {
+            display: flex;
+            gap: 30px;
             justify-content: center;
-            margin-bottom: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .vp-board-wrapper {
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fcf8f2;
+        }
+
+        #vp-board {
+            display: grid;
+            grid-template-columns: repeat(10, 55px);
+            grid-template-rows: repeat(10, 55px);
+            border: 2px solid #4e342e;
         }
 
         .vp-cell {
-            aspect-ratio: 1;
-            border-radius: 14px;
-            border: none;
-            background: #f2e4c7;
-            color: var(--accent);
-            font-size: 2rem;
+            border: 1px solid #d7ccc8;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px;
+            box-sizing: border-box;
+            font-size: 11px;
             font-weight: bold;
-            cursor: pointer;
+            color: #795548;
+            position: relative;
+            background-color: #f7f1e9;
         }
 
-        .vp-cell:hover {
-            background: #e8d3a8;
+        .vp-cell:nth-child(even) {
+            background-color: #f7f1e9;
         }
 
-        .vp-cell.winner {
-            background: #c8f2cc;
+        .vp-cell-100 {
+            background-color: #fff9c4 !important;
+            color: #b71c1c;
+            font-size: 13px;
+        }
+
+        #vp-canvas-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .vp-token {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 10;
+            transition: all 0.4s ease-in-out;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+        }
+
+        #vp-player-token {
+            background-color: #ff1744;
+        }
+
+        #vp-cpu-token {
+            background-color: #29b6f6;
+        }
+
+        .vp-controls-panel {
+            flex: 1;
+            min-width: 280px;
+            max-width: 350px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .vp-turn-indicator {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 8px;
+            border-radius: 4px;
+            background: #f5f5f5;
+        }
+
+        .vp-player-turn {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .vp-cpu-turn {
+            background-color: #e1f5fe;
+            color: #0277bd;
+        }
+
+        .vp-dice-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            background: #efebe9;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        #vp-dice {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: 2px solid #4e342e;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4e342e;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .vp-log-box {
+            border: 1px solid #d7ccc8;
+            border-radius: 6px;
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #fafafa;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .vp-log-entry {
+            margin-bottom: 6px;
+            border-bottom: 1px dashed #efebe9;
+            padding-bottom: 4px;
+        }
+
+        .vp-virtue {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        .vp-vice {
+            color: #c62828;
+            font-weight: bold;
+        }
+
+        .vp-legend {
+            font-size: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            background: #fafafa;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #efebe9;
         }
 
         .footer-note {
@@ -368,24 +508,53 @@
         <section class="game-section" id="game-vaikunthapali">
             <div class="game-card">
                 <h2 class="section-title">Vaikuntha Pali</h2>
-                <p class="section-description">A simple two-player challenge where you face the CPU on a 3x3 board.</p>
+                <p class="section-description">A spiritual journey board game where you face the CPU toward Moksha.</p>
                 <div class="controls">
                     <button id="vp-instructions-btn" type="button">Instructions</button>
-                    <button id="vp-reset-btn" type="button">Restart Game</button>
+                    <button id="vp-reset-btn" type="button">Reset Board</button>
                 </div>
 
                 <div id="vp-instructions" class="instructions hidden">
                     <h3>How to Play</h3>
                     <ul>
-                        <li>Take turns placing your marker in an empty square.</li>
-                        <li>Try to make three in a row horizontally, vertically, or diagonally.</li>
-                        <li>The CPU plays as the second player and responds automatically.</li>
-                        <li>The first player to complete a line wins the round.</li>
+                        <li>Roll the die to move your token along the path.</li>
+                        <li>Virtues lift you upward, while vices pull you downward.</li>
+                        <li>The CPU takes its turn automatically after you roll.</li>
+                        <li>Reach square 100 first to achieve Moksha.</li>
                     </ul>
                 </div>
 
-                <div id="vp-status" class="status-msg">Your turn: You (X)</div>
-                <div id="vp-board" class="vp-board"></div>
+                <div class="vp-game-shell">
+                    <div class="vp-board-wrapper">
+                        <div id="vp-board"></div>
+                        <canvas id="vp-canvas-overlay" width="550" height="550"></canvas>
+                        <div id="vp-player-token" class="vp-token"></div>
+                        <div id="vp-cpu-token" class="vp-token"></div>
+                    </div>
+
+                    <div class="vp-controls-panel">
+                        <div id="vp-turn-banner" class="vp-turn-indicator vp-player-turn">Your Turn</div>
+
+                        <div class="vp-dice-area">
+                            <div id="vp-dice">-</div>
+                            <button id="vp-roll-btn" type="button">Roll Die</button>
+                        </div>
+
+                        <div class="vp-legend">
+                            <div>🔴 <strong>You</strong></div>
+                            <div>🔵 <strong>CPU</strong></div>
+                            <div>🟩 Virtues (▲)</div>
+                            <div>🟥 Vices (▼)</div>
+                        </div>
+
+                        <strong>Journey Log:</strong>
+                        <div class="vp-log-box" id="vp-log">
+                            <div class="vp-log-entry">Welcome. May the pure qualities elevate you. Roll to start!</div>
+                        </div>
+
+                        <button id="vp-reset-btn-secondary" type="button" style="background-color: #8d6e63;">Reset Board</button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -644,125 +813,227 @@
 
         function setupVaikunthaPaliGame() {
             const boardEl = document.getElementById('vp-board');
-            const statusEl = document.getElementById('vp-status');
-            const resetBtn = document.getElementById('vp-reset-btn');
+            const canvas = document.getElementById('vp-canvas-overlay');
+            const ctx = canvas.getContext('2d');
+            const turnBanner = document.getElementById('vp-turn-banner');
+            const diceEl = document.getElementById('vp-dice');
+            const rollBtn = document.getElementById('vp-roll-btn');
+            const logEl = document.getElementById('vp-log');
             const instructionsBtn = document.getElementById('vp-instructions-btn');
             const instructionsEl = document.getElementById('vp-instructions');
-            let board = Array(9).fill('');
-            let gameActive = true;
-            let humanTurn = true;
+            const resetBtn = document.getElementById('vp-reset-btn');
+            const resetBtnSecondary = document.getElementById('vp-reset-btn-secondary');
+            const boardSize = 10;
+            const cellSize = 55;
 
-            const winningLines = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                [0, 4, 8], [2, 4, 6]
-            ];
+            const ladders = {
+                12: { to: 38, name: 'Faith (Shraddha)' },
+                32: { to: 55, name: 'Conscience (Viveka)' },
+                51: { to: 72, name: 'Reliability (Satya)' },
+                57: { to: 86, name: 'Generosity (Dana)' },
+                76: { to: 97, name: 'Knowledge (Jnana)' }
+            };
 
-            function renderBoard() {
+            const snakes = {
+                41: { to: 19, name: 'Disobedience (Ajnana)' },
+                52: { to: 28, name: 'Theft (Chora)' },
+                84: { to: 45, name: 'Anger (Krodha)' },
+                92: { to: 63, name: 'Greed (Lobha)' },
+                99: { to: 22, name: 'Ego / Lust (Ahankara)' }
+            };
+
+            let positions = { player: 1, cpu: 1 };
+            let isMoving = false;
+            let activeTurn = 'player';
+
+            function createBoard() {
                 boardEl.innerHTML = '';
-                board.forEach((value, index) => {
-                    const cell = document.createElement('button');
-                    cell.className = 'vp-cell';
-                    cell.textContent = value;
-                    cell.addEventListener('click', () => handleCellClick(index));
-                    if (value || !gameActive || !humanTurn) {
-                        cell.disabled = true;
+                for (let row = boardSize - 1; row >= 0; row--) {
+                    const isRowEven = row % 2 === 0;
+                    for (let col = 0; col < boardSize; col++) {
+                        const actualCol = isRowEven ? col : (boardSize - 1 - col);
+                        const cellNumber = (row * boardSize) + actualCol + 1;
+                        const cell = document.createElement('div');
+                        cell.className = `vp-cell vp-cell-${cellNumber}`;
+                        cell.id = `vp-cell-${cellNumber}`;
+                        cell.innerHTML = `<span>${cellNumber}</span>`;
+
+                        if (ladders[cellNumber]) {
+                            cell.innerHTML += `<span style="color:#2e7d32;font-size:10px;">▲ ${ladders[cellNumber].name.split(' ')[0]}</span>`;
+                        } else if (snakes[cellNumber]) {
+                            cell.innerHTML += `<span style="color:#c62828;font-size:10px;">▼ ${snakes[cellNumber].name.split(' ')[0]}</span>`;
+                        } else if (cellNumber === 100) {
+                            cell.className += ' vp-cell-100';
+                        }
+                        boardEl.appendChild(cell);
                     }
-                    boardEl.appendChild(cell);
+                }
+            }
+
+            function getCellCoordinates(num) {
+                const index = num - 1;
+                const row = Math.floor(index / boardSize);
+                const col = index % boardSize;
+                const visualRow = boardSize - 1 - row;
+                const visualCol = (row % 2 === 0) ? col : (boardSize - 1 - col);
+                return {
+                    x: visualCol * cellSize + cellSize / 2,
+                    y: visualRow * cellSize + cellSize / 2
+                };
+            }
+
+            function drawSnakesAndLadders() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                Object.keys(ladders).forEach(start => {
+                    const startPt = getCellCoordinates(parseInt(start));
+                    const endPt = getCellCoordinates(ladders[start].to);
+                    ctx.strokeStyle = 'rgba(46, 125, 50, 0.6)';
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(startPt.x, startPt.y);
+                    ctx.lineTo(endPt.x, endPt.y);
+                    ctx.stroke();
+                });
+
+                Object.keys(snakes).forEach(start => {
+                    const startPt = getCellCoordinates(parseInt(start));
+                    const endPt = getCellCoordinates(snakes[start].to);
+                    ctx.strokeStyle = 'rgba(198, 40, 40, 0.6)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(startPt.x, startPt.y);
+                    const cp1x = (startPt.x + endPt.x) / 2 + 25;
+                    const cp1y = (startPt.y + endPt.y) / 2 - 15;
+                    const cp2x = (startPt.x + endPt.x) / 2 - 25;
+                    const cp2y = (startPt.y + endPt.y) / 2 + 15;
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endPt.x, endPt.y);
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(198, 40, 40, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(startPt.x, startPt.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
                 });
             }
 
-            function updateStatus(message) {
-                statusEl.textContent = message;
-            }
+            function updateVisualPositions() {
+                const pCoords = getCellCoordinates(positions.player);
+                const cCoords = getCellCoordinates(positions.cpu);
+                const pToken = document.getElementById('vp-player-token');
+                const cToken = document.getElementById('vp-cpu-token');
 
-            function checkWinner() {
-                for (const [a, b, c] of winningLines) {
-                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                        return { winner: board[a], line: [a, b, c] };
-                    }
-                }
-
-                if (board.every(Boolean)) {
-                    return { winner: 'draw' };
-                }
-                return null;
-            }
-
-            function finishGame(result) {
-                gameActive = false;
-                if (result.winner === 'draw') {
-                    updateStatus('It\'s a draw!');
+                if (positions.player === positions.cpu) {
+                    pToken.style.left = `${pCoords.x - 18}px`;
+                    pToken.style.top = `${pCoords.y - 10}px`;
+                    cToken.style.left = `${cCoords.x + 2}px`;
+                    cToken.style.top = `${cCoords.y - 10}px`;
                 } else {
-                    updateStatus(`Winner: ${result.winner === 'X' ? 'You' : 'CPU'}`);
+                    pToken.style.left = `${pCoords.x - 10}px`;
+                    pToken.style.top = `${pCoords.y - 10}px`;
+                    cToken.style.left = `${cCoords.x - 10}px`;
+                    cToken.style.top = `${cCoords.y - 10}px`;
                 }
             }
 
-            function handleCellClick(index) {
-                if (!gameActive || !humanTurn || board[index] !== '') return;
+            function logMessage(text) {
+                const entry = document.createElement('div');
+                entry.className = 'vp-log-entry';
+                entry.innerHTML = text;
+                logEl.appendChild(entry);
+                logEl.scrollTop = logEl.scrollHeight;
+            }
 
-                board[index] = 'X';
-                renderBoard();
+            function setTurnBanner(turn) {
+                if (turn === 'player') {
+                    turnBanner.innerText = 'Your Turn';
+                    turnBanner.className = 'vp-turn-indicator vp-player-turn';
+                    rollBtn.disabled = false;
+                } else {
+                    turnBanner.innerText = "CPU's Turn...";
+                    turnBanner.className = 'vp-turn-indicator vp-cpu-turn';
+                    rollBtn.disabled = true;
+                }
+            }
 
-                const result = checkWinner();
-                if (result) {
-                    finishGame(result);
+            async function handleUserTurn() {
+                if (isMoving || activeTurn !== 'player') return;
+                await executeMove('player');
+            }
+
+            async function executeMove(role) {
+                isMoving = true;
+                rollBtn.disabled = true;
+
+                const dieRoll = Math.floor(Math.random() * 6) + 1;
+                diceEl.innerText = dieRoll;
+
+                const nameLabel = role === 'player' ? '<strong>You</strong>' : '<strong>CPU</strong>';
+                logMessage(`${nameLabel} rolled a <strong>${dieRoll}</strong>.`);
+
+                let currentPos = positions[role];
+                let targetPos = currentPos + dieRoll;
+
+                if (targetPos > 100) {
+                    logMessage(`${nameLabel} rolled too high to enter Vaikuntha. Remaining at ${currentPos}.`);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    switchTurns();
                     return;
                 }
 
-                humanTurn = false;
-                updateStatus('CPU is thinking...');
-                setTimeout(makeComputerMove, 400);
-            }
+                while (currentPos < targetPos) {
+                    currentPos++;
+                    positions[role] = currentPos;
+                    updateVisualPositions();
+                    await new Promise(resolve => setTimeout(resolve, 220));
+                }
 
-            function makeComputerMove() {
-                if (!gameActive || humanTurn) return;
+                if (ladders[currentPos]) {
+                    const map = ladders[currentPos];
+                    logMessage(`✨ ${nameLabel} cultivated <span class="vp-virtue">${map.name}</span>! Climbing to ${map.to}.`);
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                    positions[role] = map.to;
+                    updateVisualPositions();
+                } else if (snakes[currentPos]) {
+                    const map = snakes[currentPos];
+                    logMessage(`🐍 ${nameLabel} succumbed to <span class="vp-vice">${map.name}</span>! Dropping back to ${map.to}.`);
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                    positions[role] = map.to;
+                    updateVisualPositions();
+                }
 
-                const bestMove = findBestMove();
-                if (bestMove === null) {
-                    finishGame({ winner: 'draw' });
+                if (positions[role] === 100) {
+                    logMessage(`🎉 **${role === 'player' ? 'Victory' : 'The CPU'} has achieved Moksha! Reached Vaikuntha!**`);
+                    rollBtn.disabled = true;
+                    turnBanner.innerText = role === 'player' ? 'You Win!' : 'CPU Wins!';
+                    isMoving = false;
                     return;
                 }
 
-                board[bestMove] = 'O';
-                renderBoard();
-
-                const result = checkWinner();
-                if (result) {
-                    finishGame(result);
-                    return;
-                }
-
-                humanTurn = true;
-                updateStatus('Your turn: You (X)');
+                switchTurns();
             }
 
-            function findBestMove() {
-                const winningMove = getMoveForPlayer('O');
-                if (winningMove !== null) return winningMove;
-
-                const blockingMove = getMoveForPlayer('X');
-                if (blockingMove !== null) return blockingMove;
-
-                const center = 4;
-                if (board[center] === '') return center;
-
-                const corners = [0, 2, 6, 8].filter(index => board[index] === '');
-                if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
-
-                const empties = board.map((value, index) => value === '' ? index : null).filter(index => index !== null);
-                return empties.length ? empties[Math.floor(Math.random() * empties.length)] : null;
+            async function switchTurns() {
+                isMoving = false;
+                if (activeTurn === 'player') {
+                    activeTurn = 'cpu';
+                    setTurnBanner('cpu');
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    await executeMove('cpu');
+                } else {
+                    activeTurn = 'player';
+                    setTurnBanner('player');
+                }
             }
 
-            function getMoveForPlayer(player) {
-                for (const [a, b, c] of winningLines) {
-                    const values = [board[a], board[b], board[c]];
-                    const empties = values.filter(value => value === '');
-                    if (empties.length === 1 && values.filter(value => value === player).length === 2) {
-                        return [a, b, c][values.indexOf('')];
-                    }
-                }
-                return null;
+            function resetGame() {
+                positions.player = 1;
+                positions.cpu = 1;
+                isMoving = false;
+                activeTurn = 'player';
+                diceEl.innerText = '-';
+                setTurnBanner('player');
+                updateVisualPositions();
+                logEl.innerHTML = '<div class="vp-log-entry">A fresh lifecycle begins. Clear your mind and roll!</div>';
             }
 
             instructionsBtn.addEventListener('click', () => {
@@ -770,16 +1041,14 @@
                 instructionsBtn.textContent = instructionsEl.classList.contains('hidden') ? 'Instructions' : 'Hide Instructions';
             });
 
-            resetBtn.addEventListener('click', () => {
-                board = Array(9).fill('');
-                gameActive = true;
-                humanTurn = true;
-                renderBoard();
-                updateStatus('Your turn: You (X)');
-            });
+            resetBtn.addEventListener('click', resetGame);
+            resetBtnSecondary.addEventListener('click', resetGame);
+            rollBtn.addEventListener('click', handleUserTurn);
 
-            renderBoard();
-            updateStatus('Your turn: You (X)');
+            createBoard();
+            drawSnakesAndLadders();
+            updateVisualPositions();
+            setTurnBanner('player');
         }
 
         setupVamanaGame();
