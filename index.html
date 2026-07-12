@@ -526,6 +526,7 @@
 
                 <div class="vp-game-shell">
                     <div class="vp-board-wrapper">
+                        <img id="vp-board-image" src="vaikuntha-pali-board.png" alt="Vaikuntha Pali board image" />
                         <div id="vp-board"></div>
                         <canvas id="vp-canvas-overlay" width="550" height="550"></canvas>
                         <div id="vp-player-token" class="vp-token"></div>
@@ -813,6 +814,7 @@
 
         function setupVaikunthaPaliGame() {
             const boardEl = document.getElementById('vp-board');
+            const boardImage = document.getElementById('vp-board-image');
             const canvas = document.getElementById('vp-canvas-overlay');
             const ctx = canvas.getContext('2d');
             const turnBanner = document.getElementById('vp-turn-banner');
@@ -934,6 +936,16 @@
                     cToken.style.top = `${cCoords.y - 10}px`;
                 }
             }
+
+            boardImage.onload = () => {
+                boardEl.style.visibility = 'hidden';
+                boardImage.style.display = 'block';
+            };
+
+            boardImage.onerror = () => {
+                boardImage.style.display = 'none';
+                boardEl.style.visibility = 'visible';
+            };
 
             function logMessage(text) {
                 const entry = document.createElement('div');
