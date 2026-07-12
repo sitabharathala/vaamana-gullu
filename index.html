@@ -72,6 +72,30 @@
             color: #444;
         }
 
+        .instructions {
+            margin-bottom: 20px;
+            padding: 15px 18px;
+            background: #f8f4ea;
+            border: 1px solid #e2d1b3;
+            border-radius: 10px;
+        }
+
+        .instructions h3 {
+            margin: 0 0 10px;
+            color: var(--board-color);
+            font-size: 1rem;
+        }
+
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 6px;
+        }
+
         /* Mancala Board Layout */
         .board-wrapper {
             display: flex;
@@ -215,6 +239,17 @@
         </div>
 
         <div id="status" class="status-msg">Your turn! Select a pit.</div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Each pit starts with 5 seeds, and your side is the bottom row.</li>
+                <li>On your turn, click any non-empty pit on your side to sow the seeds counter-clockwise.</li>
+                <li>If the last seed lands in a pit that already has seeds, the sowing continues from there.</li>
+                <li>If the last seed lands in an empty pit on your side, you capture the seeds from the opposite pit on the CPU side.</li>
+                <li>The game ends when one row is empty; the player with the most captured seeds wins.</li>
+            </ul>
+        </div>
 
         <div class="row-label cpu">CPU Side (Counter-Clockwise ◄)</div>
         <div class="board-wrapper">
