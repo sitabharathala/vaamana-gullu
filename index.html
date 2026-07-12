@@ -80,6 +80,10 @@
             border-radius: 10px;
         }
 
+        .instructions.hidden {
+            display: none;
+        }
+
         .instructions h3 {
             margin: 0 0 10px;
             color: var(--board-color);
@@ -191,6 +195,8 @@
         .controls {
             display: flex;
             justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
         button {
@@ -240,7 +246,12 @@
 
         <div id="status" class="status-msg">Your turn! Select a pit.</div>
 
-        <div class="instructions">
+        <div class="controls">
+            <button id="instructions-btn" type="button">Instructions</button>
+            <button id="reset-btn" type="button">Restart Game</button>
+        </div>
+
+        <div id="instructions" class="instructions hidden">
             <h3>How to Play</h3>
             <ul>
                 <li>Each pit starts with 5 seeds, and your side is the bottom row.</li>
@@ -260,10 +271,6 @@
             </div>
         </div>
         <div class="row-label player">Your Side (Counter-Clockwise ►)</div>
-
-        <div class="controls">
-            <button id="reset-btn">Restart Game</button>
-        </div>
 
         <div style="margin-top: 18px; text-align: center; color: #7a6b58; font-size: 0.95rem; font-style: italic;">
             Game developed by Sita Bharathala
@@ -289,6 +296,8 @@
         const playerScoreEl = document.getElementById('player-score');
         const cpuScoreEl = document.getElementById('cpu-score');
         const statusEl = document.getElementById('status');
+        const instructionsBtn = document.getElementById('instructions-btn');
+        const instructionsEl = document.getElementById('instructions');
         const resetBtn = document.getElementById('reset-btn');
 
         // Initialize Game
@@ -518,6 +527,11 @@
                 }
             }
         }
+
+        instructionsBtn.addEventListener('click', () => {
+            instructionsEl.classList.toggle('hidden');
+            instructionsBtn.textContent = instructionsEl.classList.contains('hidden') ? 'Instructions' : 'Hide Instructions';
+        });
 
         resetBtn.addEventListener('click', initGame);
 
