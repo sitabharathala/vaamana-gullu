@@ -486,14 +486,56 @@
             gap: 15px;
         }
 
+        .chinta-turn-indicator {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 8px;
+            border-radius: 4px;
+            background: #f5f5f5;
+            transition: all 0.3s ease;
+        }
+
+        .chinta-player-turn {
+            background-color: #ffebee;
+            color: var(--chinta-accent);
+            border: 1px solid #ffcdbc;
+        }
+
+        .chinta-cpu-turn {
+            background-color: #e1f5fe;
+            color: #0277bd;
+            border: 1px solid #b3e5fc;
+        }
+
         .chinta-score-board {
-            display: flex;
-            justify-content: space-between;
-            background: #fbe9e7;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            background: #fafafa;
             padding: 12px;
             border-radius: 6px;
             font-weight: bold;
-            border: 1px solid #ffccbc;
+            font-size: 14px;
+            border: 1px solid #efebe9;
+        }
+
+        .chinta-score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px;
+            border-radius: 4px;
+        }
+
+        .chinta-p-score {
+            background: #ffebee;
+            color: var(--chinta-accent);
+        }
+
+        .chinta-c-score {
+            background: #e1f5fe;
+            color: #0277bd;
         }
 
         .chinta-btn {
@@ -524,9 +566,9 @@
 
         .chinta-instructions {
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.4;
             background: #fafafa;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
             border-left: 4px solid #8d6e63;
         }
@@ -534,7 +576,7 @@
         .chinta-log-box {
             border: 1px solid #d7ccc8;
             border-radius: 6px;
-            height: 150px;
+            height: 160px;
             overflow-y: auto;
             padding: 10px;
             background: #fdfdfd;
@@ -549,6 +591,7 @@
 
         .chinta-foul { color: #d84315; font-weight: bold; }
         .chinta-success { color: #2e7d32; font-weight: bold; }
+        .chinta-turn-log { color: #555; font-style: italic; font-weight: bold; }
 
         .footer-note {
             margin-top: 18px;
@@ -674,25 +717,36 @@
                     </div>
 
                     <div class="chinta-sidebar">
+                        <div id="chinta-turn-banner" class="chinta-turn-indicator chinta-player-turn">Your Turn</div>
+
                         <div class="chinta-score-board">
-                            <div>Seeds Left: <span id="chinta-seeds-count">0</span></div>
-                            <div>Your Score: <span id="chinta-score">0</span></div>
+                            <div class="chinta-score-item chinta-p-score">
+                                <span>You</span>
+                                <span id="chinta-player-score" style="font-size: 18px;">0</span>
+                            </div>
+                            <div class="chinta-score-item chinta-c-score">
+                                <span>CPU</span>
+                                <span id="chinta-cpu-score" style="font-size: 18px;">0</span>
+                            </div>
+                            <div style="grid-column: span 2; text-align: center; font-size: 12px; color: #795548; margin-top: 4px;">
+                                Remaining Seeds: <span id="chinta-seeds-count">75</span>
+                            </div>
                         </div>
 
                         <div class="chinta-instructions">
-                            <strong>How to Play:</strong>
-                            <ol style="margin: 5px 0; padding-left: 20px;">
-                                <li>Click <strong>Blow Pile (Oodu)</strong> to scatter the seeds.</li>
-                                <li>Carefully <strong>click/tap a single seed</strong> to pick it up.</li>
-                                <li>If you nudge or move <em>any</em> other seed in the process, it's a <strong>Foul</strong>!</li>
-                            </ol>
+                            <strong>Rules of Play:</strong>
+                            <ul style="margin: 5px 0; padding-left: 15px;">
+                                <li>Blow the pile to scatter the 75 seeds.</li>
+                                <li>Pick a seed without disturbing any neighbors.</li>
+                                <li>If you nudge a seed, you lose your turn to the CPU!</li>
+                            </ul>
                         </div>
 
                         <button id="chinta-blow-btn" class="chinta-btn" type="button">🌬️ Blow Pile (Oodu)</button>
 
-                        <strong>Live Feedback Log:</strong>
+                        <strong>Live Game Log:</strong>
                         <div class="chinta-log-box" id="chinta-log-box">
-                            <div class="chinta-log-entry">Pile is set. Click “Blow Pile” to scatter the seeds!</div>
+                            <div class="chinta-log-entry">Pile is packed. Click 'Blow Pile' to scatter!</div>
                         </div>
 
                         <button id="chinta-reset-btn" class="chinta-btn" style="background-color: #8d6e63;" type="button">Reset Game</button>
@@ -739,15 +793,20 @@
             const blowBtn = document.getElementById('chinta-blow-btn');
             const resetBtn = document.getElementById('chinta-reset-btn');
             const seedsCountEl = document.getElementById('chinta-seeds-count');
-            const scoreEl = document.getElementById('chinta-score');
+            const playerScoreEl = document.getElementById('chinta-player-score');
+            const cpuScoreEl = document.getElementById('chinta-cpu-score');
+            const turnBanner = document.getElementById('chinta-turn-banner');
             const logBox = document.getElementById('chinta-log-box');
 
             let seeds = [];
-            let score = 0;
+            let scores = { player: 0, cpu: 0 };
+            let activePlayer = 'player';
             let gamePhase = 'setup';
-            const seedRadius = 10;
-            const totalSeeds = 35;
-            const friction = 0.95;
+            let isCpuThinking = false;
+
+            const seedRadius = 8.5;
+            const totalSeeds = 75;
+            const friction = 0.94;
 
             class TamarindSeed {
                 constructor(x, y) {
@@ -755,29 +814,33 @@
                     this.y = y;
                     this.vx = 0;
                     this.vy = 0;
-                    this.radius = seedRadius + (Math.random() * 3 - 1.5);
+                    this.radius = seedRadius + (Math.random() * 2 - 1);
                     this.color = Math.random() > 0.5 ? '#3e2723' : '#5d4037';
                     this.angle = Math.random() * Math.PI * 2;
-                    this.widthRatio = 0.75 + Math.random() * 0.15;
+                    this.widthRatio = 0.72 + Math.random() * 0.15;
                 }
 
                 draw() {
                     ctx.save();
                     ctx.translate(this.x, this.y);
                     ctx.rotate(this.angle);
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-                    ctx.shadowBlur = 4;
-                    ctx.shadowOffsetX = 2;
-                    ctx.shadowOffsetY = 2;
+
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+                    ctx.shadowBlur = 3;
+                    ctx.shadowOffsetX = 1.5;
+                    ctx.shadowOffsetY = 1.5;
+
                     ctx.fillStyle = this.color;
                     ctx.beginPath();
                     ctx.ellipse(0, 0, this.radius, this.radius * this.widthRatio, 0, 0, Math.PI * 2);
                     ctx.fill();
+
                     ctx.shadowColor = 'transparent';
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
                     ctx.beginPath();
                     ctx.ellipse(-this.radius / 3, -this.radius / 4, this.radius / 3, this.radius / 6, Math.PI / 4, 0, Math.PI * 2);
                     ctx.fill();
+
                     ctx.restore();
                 }
 
@@ -801,7 +864,7 @@
 
                 for (let i = 0; i < totalSeeds; i++) {
                     const angle = Math.random() * Math.PI * 2;
-                    const distance = Math.sqrt(Math.random()) * 40;
+                    const distance = Math.sqrt(Math.random()) * 30;
                     const x = centerX + Math.cos(angle) * distance;
                     const y = centerY + Math.sin(angle) * distance;
                     seeds.push(new TamarindSeed(x, y));
@@ -863,18 +926,19 @@
                     const dx = seed.x - blowX;
                     const dy = seed.y - blowY;
                     const dist = Math.hypot(dx, dy) || 1;
-                    const force = (80 / dist) + (Math.random() * 5 + 5);
+                    const force = (24 / dist) + (Math.random() * 2 + 1.5);
                     seed.vx = (dx / dist) * force;
                     seed.vy = (dy / dist) * force;
                 });
 
                 gamePhase = 'blown';
                 blowBtn.disabled = true;
-                addLog('💨 *Fuuuuh!* You blew the pile! The seeds have scattered. Begin picking!');
+                addLog('💨 *Phuuu!* A gentle blow scatters the seeds into challenging, dense patterns. Begin play!');
+                setTurn('player');
             }
 
             canvas.addEventListener('mousedown', (e) => {
-                if (gamePhase !== 'blown') return;
+                if (gamePhase !== 'blown' || activePlayer !== 'player' || isCpuThinking) return;
 
                 const rect = canvas.getBoundingClientRect();
                 const clickX = e.clientX - rect.left;
@@ -883,51 +947,125 @@
                 let clickedIndex = -1;
                 for (let i = 0; i < seeds.length; i++) {
                     const dist = Math.hypot(seeds[i].x - clickX, seeds[i].y - clickY);
-                    if (dist < seeds[i].radius + 5) {
+                    if (dist < seeds[i].radius + 6) {
                         clickedIndex = i;
                         break;
                     }
                 }
 
                 if (clickedIndex !== -1) {
-                    attemptToPick(clickedIndex);
+                    attemptToPick(clickedIndex, 'player');
                 }
             });
 
-            function attemptToPick(index) {
+            function attemptToPick(index, role) {
                 const pickedSeed = seeds[index];
                 let nudgeDetected = false;
+                const label = role === 'player' ? 'You' : 'CPU';
 
                 for (let i = 0; i < seeds.length; i++) {
                     if (i === index) continue;
 
                     const distance = Math.hypot(seeds[i].x - pickedSeed.x, seeds[i].y - pickedSeed.y);
-                    const safeDistance = pickedSeed.radius + seeds[i].radius + 4;
+                    const safeDistance = pickedSeed.radius + seeds[i].radius + 4.5;
 
                     if (distance < safeDistance) {
                         nudgeDetected = true;
                         const dx = seeds[i].x - pickedSeed.x;
                         const dy = seeds[i].y - pickedSeed.y;
                         const len = Math.hypot(dx, dy) || 1;
-                        seeds[i].vx = (dx / len) * 3;
-                        seeds[i].vy = (dy / len) * 3;
+                        seeds[i].vx = (dx / len) * 2.5;
+                        seeds[i].vy = (dy / len) * 2.5;
                     }
                 }
 
                 if (nudgeDetected) {
-                    gamePhase = 'foul';
-                    addLog("<span class='chinta-foul'>❌ FOUL! You touched or nudged a neighboring seed! Your turn is over.</span>");
+                    addLog(`<span class='chinta-foul'>❌ FOUL! ${label} touched a nearby seed! Turn forfeit.</span>`);
+                    switchTurn();
                 } else {
                     seeds.splice(index, 1);
-                    score++;
-                    addLog("<span class='chinta-success'>💎 Clean pick! Seed removed successfully.</span>");
+                    scores[role]++;
+                    addLog(`<span class='chinta-success'>💎 Clean pick by ${label}! Seed claimed.</span>`);
                     updateUI();
 
                     if (seeds.length === 0) {
-                        addLog('🏆 <strong>Phenomenal!</strong> You picked all the seeds without making any mistakes!');
-                        gamePhase = 'finished';
+                        declareWinner();
+                    } else if (role === 'cpu') {
+                        setTimeout(triggerCpuTurn, 1000);
                     }
                 }
+            }
+
+            function triggerCpuTurn() {
+                if (gamePhase !== 'blown' || activePlayer !== 'cpu' || seeds.length === 0) return;
+                isCpuThinking = true;
+
+                let safetyRatings = [];
+
+                for (let i = 0; i < seeds.length; i++) {
+                    let neighborsCount = 0;
+                    let closestDistance = Infinity;
+
+                    for (let j = 0; j < seeds.length; j++) {
+                        if (i === j) continue;
+                        const dist = Math.hypot(seeds[i].x - seeds[j].x, seeds[i].y - seeds[j].y);
+                        if (dist < 32) neighborsCount++;
+                        if (dist < closestDistance) closestDistance = dist;
+                    }
+
+                    safetyRatings.push({ index: i, count: neighborsCount, gap: closestDistance });
+                }
+
+                safetyRatings.sort((a, b) => a.count - b.count || b.gap - a.gap);
+
+                const isAccurateShot = Math.random() < 0.78;
+                let targetIdx = -1;
+
+                if (isAccurateShot && safetyRatings[0].count === 0) {
+                    targetIdx = safetyRatings[0].index;
+                } else {
+                    const indexWindow = Math.min(safetyRatings.length - 1, 3);
+                    const randomChoice = Math.floor(Math.random() * indexWindow);
+                    targetIdx = safetyRatings[randomChoice].index;
+                }
+
+                addLog('<span class="chinta-turn-log">🤖 CPU is aiming at a seed...</span>');
+
+                setTimeout(() => {
+                    if (targetIdx >= 0 && targetIdx < seeds.length) {
+                        attemptToPick(targetIdx, 'cpu');
+                    } else {
+                        switchTurn();
+                    }
+                    isCpuThinking = false;
+                }, 1200);
+            }
+
+            function switchTurn() {
+                if (activePlayer === 'player') {
+                    setTurn('cpu');
+                    setTimeout(triggerCpuTurn, 1000);
+                } else {
+                    setTurn('player');
+                }
+            }
+
+            function setTurn(player) {
+                activePlayer = player;
+                if (player === 'player') {
+                    turnBanner.innerText = 'Your Turn';
+                    turnBanner.className = 'chinta-turn-indicator chinta-player-turn';
+                } else {
+                    turnBanner.innerText = "CPU's Turn...";
+                    turnBanner.className = 'chinta-turn-indicator chinta-cpu-turn';
+                }
+            }
+
+            function declareWinner() {
+                gamePhase = 'finished';
+                const winner = scores.player > scores.cpu ? 'You win!' : (scores.cpu > scores.player ? 'CPU wins!' : "It's a Tie!");
+                addLog(`🏆 <strong>Game Over!</strong> ${winner} final scores: You: ${scores.player} | CPU: ${scores.cpu}`);
+                turnBanner.innerText = winner;
             }
 
             function addLog(msg) {
@@ -940,14 +1078,19 @@
 
             function updateUI() {
                 seedsCountEl.innerText = seeds.length;
-                scoreEl.innerText = score;
+                playerScoreEl.innerText = scores.player;
+                cpuScoreEl.innerText = scores.cpu;
             }
 
             function resetGame() {
-                score = 0;
+                scores = { player: 0, cpu: 0 };
                 gamePhase = 'setup';
+                activePlayer = 'player';
+                isCpuThinking = false;
                 blowBtn.disabled = false;
-                logBox.innerHTML = '<div class="chinta-log-entry">New game set up. Ready to blow!</div>';
+                turnBanner.innerText = 'Your Turn';
+                turnBanner.className = 'chinta-turn-indicator chinta-player-turn';
+                logBox.innerHTML = '<div class="chinta-log-entry">75 fresh seeds piled up. Ready to scatter!</div>';
                 initSeeds();
             }
 
