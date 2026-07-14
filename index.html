@@ -300,11 +300,12 @@
             display: grid;
             grid-template-columns: repeat(10, 55px);
             grid-template-rows: repeat(10, 55px);
-            border: 2px solid #4e342e;
+            border: 2px solid #7c4a12;
+            background: linear-gradient(135deg, #fffaf0 0%, #f2e0b7 100%);
         }
 
         .vp-cell {
-            border: 1px solid #d7ccc8;
+            border: 1px solid #b59a6f;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -312,18 +313,18 @@
             box-sizing: border-box;
             font-size: 11px;
             font-weight: bold;
-            color: #795548;
+            color: #6d4c41;
             position: relative;
-            background-color: #f7f1e9;
+            background-color: #f8efe2;
         }
 
         .vp-cell:nth-child(even) {
-            background-color: #f7f1e9;
+            background-color: #f4e2c2;
         }
 
         .vp-cell-100 {
-            background-color: #fff9c4 !important;
-            color: #b71c1c;
+            background-color: #f6d365 !important;
+            color: #7b1fa2;
             font-size: 13px;
         }
 
@@ -463,7 +464,7 @@
 
         <div class="game-nav" role="tablist" aria-label="Game selector">
             <button class="nav-btn active" data-game="vamana">Vamana Gullu</button>
-            <button class="nav-btn" data-game="vaikunthapali">Vaikuntha Pali</button>
+            <button class="nav-btn" data-game="vaikunthapali">Paramapada Sopana Patham</button>
             <button class="nav-btn" data-game="coming-soon">More Games</button>
         </div>
 
@@ -507,8 +508,8 @@
 
         <section class="game-section" id="game-vaikunthapali">
             <div class="game-card">
-                <h2 class="section-title">Vaikuntha Pali</h2>
-                <p class="section-description">A spiritual journey board game where you face the CPU toward Moksha.</p>
+                <h2 class="section-title">Paramapada Sopana Patham</h2>
+                <p class="section-description">A sacred path board game where you climb toward Paramapada while the CPU challenges you at every step.</p>
                 <div class="controls">
                     <button id="vp-instructions-btn" type="button">Instructions</button>
                     <button id="vp-reset-btn" type="button">Reset Board</button>
@@ -517,16 +518,15 @@
                 <div id="vp-instructions" class="instructions hidden">
                     <h3>How to Play</h3>
                     <ul>
-                        <li>Roll the die to move your token along the path.</li>
+                        <li>Roll the die to move your token along the sacred path.</li>
                         <li>Virtues lift you upward, while vices pull you downward.</li>
                         <li>The CPU takes its turn automatically after you roll.</li>
-                        <li>Reach square 100 first to achieve Moksha.</li>
+                        <li>Reach square 100 first to attain Paramapada.</li>
                     </ul>
                 </div>
 
                 <div class="vp-game-shell">
                     <div class="vp-board-wrapper">
-                        <img id="vp-board-image" src="vaikuntha-pali-board.png" alt="Vaikuntha Pali board image" />
                         <div id="vp-board"></div>
                         <canvas id="vp-canvas-overlay" width="550" height="550"></canvas>
                         <div id="vp-player-token" class="vp-token"></div>
@@ -550,7 +550,7 @@
 
                         <strong>Journey Log:</strong>
                         <div class="vp-log-box" id="vp-log">
-                            <div class="vp-log-entry">Welcome. May the pure qualities elevate you. Roll to start!</div>
+                            <div class="vp-log-entry">Welcome. Begin your ascent on the sacred path. Roll to start!</div>
                         </div>
 
                         <button id="vp-reset-btn-secondary" type="button" style="background-color: #8d6e63;">Reset Board</button>
@@ -814,7 +814,6 @@
 
         function setupVaikunthaPaliGame() {
             const boardEl = document.getElementById('vp-board');
-            const boardImage = document.getElementById('vp-board-image');
             const canvas = document.getElementById('vp-canvas-overlay');
             const ctx = canvas.getContext('2d');
             const turnBanner = document.getElementById('vp-turn-banner');
@@ -937,16 +936,6 @@
                 }
             }
 
-            boardImage.onload = () => {
-                boardEl.style.visibility = 'hidden';
-                boardImage.style.display = 'block';
-            };
-
-            boardImage.onerror = () => {
-                boardImage.style.display = 'none';
-                boardEl.style.visibility = 'visible';
-            };
-
             function logMessage(text) {
                 const entry = document.createElement('div');
                 entry.className = 'vp-log-entry';
@@ -1014,7 +1003,7 @@
                 }
 
                 if (positions[role] === 100) {
-                    logMessage(`🎉 **${role === 'player' ? 'Victory' : 'The CPU'} has achieved Moksha! Reached Vaikuntha!**`);
+                    logMessage(`🎉 **${role === 'player' ? 'Victory' : 'The CPU'} has reached Paramapada!**`);
                     rollBtn.disabled = true;
                     turnBanner.innerText = role === 'player' ? 'You Win!' : 'CPU Wins!';
                     isMoving = false;
@@ -1045,7 +1034,7 @@
                 diceEl.innerText = '-';
                 setTurnBanner('player');
                 updateVisualPositions();
-                logEl.innerHTML = '<div class="vp-log-entry">A fresh lifecycle begins. Clear your mind and roll!</div>';
+                logEl.innerHTML = '<div class="vp-log-entry">A fresh journey begins. Clear your mind and roll!</div>';
             }
 
             instructionsBtn.addEventListener('click', () => {
@@ -1065,7 +1054,7 @@
 
         setupVamanaGame();
         setupVaikunthaPaliGame();
-        showGame('vamana');
+        showGame('vaikunthapali');
     </script>
 </body>
 </html>
