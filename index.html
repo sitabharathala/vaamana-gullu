@@ -291,24 +291,20 @@
         .vp-board-wrapper {
             position: relative;
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            border-radius: 12px;
+            border-radius: 8px;
             overflow: hidden;
-            background: radial-gradient(circle at top, #fff8e8 0%, #f3e0b8 100%);
-            padding: 10px;
+            background: #fcf8f2;
         }
 
         #vp-board {
             display: grid;
             grid-template-columns: repeat(10, 55px);
             grid-template-rows: repeat(10, 55px);
-            border: 3px solid #7c4a12;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #fffaf0 0%, #f2e0b7 100%);
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.12);
+            border: 2px solid #4e342e;
         }
 
         .vp-cell {
-            border: 1px solid #b59a6f;
+            border: 1px solid #d7ccc8;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -316,36 +312,19 @@
             box-sizing: border-box;
             font-size: 11px;
             font-weight: bold;
-            color: #6d4c41;
+            color: #795548;
             position: relative;
-            background: linear-gradient(135deg, #fff7e8 0%, #edd8af 100%);
-            border-radius: 8px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+            background-color: #f7f1e9;
         }
 
         .vp-cell:nth-child(even) {
-            background: linear-gradient(135deg, #f7ebc7 0%, #e9d09b 100%);
+            background-color: #f7f1e9;
         }
 
-        .vp-cell-start {
-            background: linear-gradient(135deg, #7cb342 0%, #388e3c 100%) !important;
-            color: white;
-        }
-
-        .vp-cell-goal {
-            background: linear-gradient(135deg, #f6d365 0%, #f79f1f 100%) !important;
-            color: #6a1b9a;
-        }
-
-        .vp-cell-number {
-            font-size: 10px;
-            font-weight: 700;
-        }
-
-        .vp-cell-label {
-            font-size: 8px;
-            line-height: 1.1;
-            opacity: 0.95;
+        .vp-cell-100 {
+            background-color: #fff9c4 !important;
+            color: #b71c1c;
+            font-size: 13px;
         }
 
         #vp-canvas-overlay {
@@ -547,6 +526,7 @@
 
                 <div class="vp-game-shell">
                     <div class="vp-board-wrapper">
+                        <img id="vp-board-image" src="vaikuntha-pali-board.png" alt="Paramapada Sopana Patham board image" />
                         <div id="vp-board"></div>
                         <canvas id="vp-canvas-overlay" width="550" height="550"></canvas>
                         <div id="vp-player-token" class="vp-token"></div>
@@ -834,6 +814,7 @@
 
         function setupVaikunthaPaliGame() {
             const boardEl = document.getElementById('vp-board');
+            const boardImage = document.getElementById('vp-board-image');
             const canvas = document.getElementById('vp-canvas-overlay');
             const ctx = canvas.getContext('2d');
             const turnBanner = document.getElementById('vp-turn-banner');
@@ -877,20 +858,14 @@
                         const cell = document.createElement('div');
                         cell.className = `vp-cell vp-cell-${cellNumber}`;
                         cell.id = `vp-cell-${cellNumber}`;
+                        cell.innerHTML = `<span>${cellNumber}</span>`;
 
-                        if (cellNumber === 1) {
-                            cell.classList.add('vp-cell-start');
-                            cell.innerHTML = '<span class="vp-cell-number">Start</span><span class="vp-cell-label">Begin</span>';
+                        if (ladders[cellNumber]) {
+                            cell.innerHTML += `<span style="color:#2e7d32;font-size:10px;">▲ ${ladders[cellNumber].name.split(' ')[0]}</span>`;
+                        } else if (snakes[cellNumber]) {
+                            cell.innerHTML += `<span style="color:#c62828;font-size:10px;">▼ ${snakes[cellNumber].name.split(' ')[0]}</span>`;
                         } else if (cellNumber === 100) {
-                            cell.classList.add('vp-cell-goal');
-                            cell.innerHTML = '<span class="vp-cell-number">100</span><span class="vp-cell-label">Paramapada</span>';
-                        } else {
-                            cell.innerHTML = `<span class="vp-cell-number">${cellNumber}</span>`;
-                            if (ladders[cellNumber]) {
-                                cell.innerHTML += `<span class="vp-cell-label" style="color:#2e7d32;">▲ ${ladders[cellNumber].name.split(' ')[0]}</span>`;
-                            } else if (snakes[cellNumber]) {
-                                cell.innerHTML += `<span class="vp-cell-label" style="color:#c62828;">▼ ${snakes[cellNumber].name.split(' ')[0]}</span>`;
-                            }
+                            cell.className += ' vp-cell-100';
                         }
                         boardEl.appendChild(cell);
                     }
@@ -909,45 +884,8 @@
                 };
             }
 
-            function drawSacredPath() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                ctx.save();
-                ctx.strokeStyle = 'rgba(139, 90, 43, 0.95)';
-                ctx.lineWidth = 10;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.beginPath();
-
-                for (let num = 1; num <= 100; num++) {
-                    const pt = getCellCoordinates(num);
-                    if (num === 1) {
-                        ctx.moveTo(pt.x, pt.y);
-                    } else {
-                        ctx.lineTo(pt.x, pt.y);
-                    }
-                }
-
-                ctx.stroke();
-
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-                ctx.lineWidth = 4;
-                ctx.setLineDash([6, 5]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                ctx.fillStyle = 'rgba(120, 65, 20, 0.85)';
-                for (let num = 1; num <= 100; num++) {
-                    const pt = getCellCoordinates(num);
-                    ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.restore();
-            }
-
             function drawSnakesAndLadders() {
-                drawSacredPath();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 Object.keys(ladders).forEach(start => {
                     const startPt = getCellCoordinates(parseInt(start));
@@ -979,6 +917,16 @@
                     ctx.fill();
                 });
             }
+
+            boardImage.onload = () => {
+                boardEl.style.visibility = 'hidden';
+                boardImage.style.display = 'block';
+            };
+
+            boardImage.onerror = () => {
+                boardImage.style.display = 'none';
+                boardEl.style.visibility = 'visible';
+            };
 
             function updateVisualPositions() {
                 const pCoords = getCellCoordinates(positions.player);
