@@ -629,7 +629,7 @@
         <p class="subtitle">Play a variety of Indian childhood classic games in one place.</p>
 
         <div class="game-nav" role="tablist" aria-label="Game selector">
-            <button class="nav-btn active" data-game="vamana">Vamana Guntalu</button>
+            <button class="nav-btn active" data-game="vamana">Vamana Gullu</button>
             <button class="nav-btn" data-game="vaikunthapali">Vaikuntha Paali</button>
             <button class="nav-btn" data-game="chintapikkala">Chintapikkala Aata</button>
             <button class="nav-btn" data-game="coming-soon">More Games</button>
@@ -637,7 +637,7 @@
 
         <section class="game-section active" id="game-vamana">
             <div class="game-card">
-                <h2 class="section-title">Vamana Guntalu</h2>
+                <h2 class="section-title">Vamana Gullu</h2>
                 <p class="section-description">A classic board game with turn-based sowing and captures.</p>
                 <div class="controls">
                     <button id="instructions-btn" type="button">Instructions</button>
@@ -730,7 +730,7 @@
         <section class="game-section" id="game-chintapikkala">
             <div class="game-card">
                 <h2 class="section-title">Chintapikkala Aata</h2>
-                <p class="section-description">Traditional tamarind-seed "blow and pick" gameplay with a clean-pick challenge.</p>
+                <p class="section-description">Traditional tamarind-seed “blow and pick” gameplay with a clean-pick challenge.</p>
 
                 <div class="chinta-game-layout">
                     <div class="chinta-canvas-container">
@@ -1001,396 +1001,612 @@
 
                     if (distance < safeDistance) {
                         nudgeDetected = true;
-                        break;
+                        const dx = seeds[i].x - pickedSeed.x;
+                        const dy = seeds[i].y - pickedSeed.y;
+                        const len = Math.hypot(dx, dy) || 1;
+                        seeds[i].vx = (dx / len) * 2.5;
+                        seeds[i].vy = (dy / len) * 2.5;
                     }
                 }
 
                 if (nudgeDetected) {
-                    addLog(`<span class="chinta-foul">❌ ${label} fouled! You touched another seed.</span>`);
-                    endTurn(role === 'player' ? 'cpu' : 'player');
+                    addLog(`<span class='chinta-foul'>❌ FOUL! ${label} touched a nearby seed! Turn forfeit.</span>`);
+                    switchTurn();
                 } else {
-                    scores[role]++;
                     seeds.splice(index, 1);
+                    scores[role]++;
+                    addLog(`<span class='chinta-success'>💎 Clean pick by ${label}! Seed claimed.</span>`);
                     updateUI();
-                    addLog(`<span class="chinta-success">✓ ${label} picked clean!</span>`);
 
                     if (seeds.length === 0) {
-                        gamePhase = 'ended';
-                        const winner = scores.player > scores.cpu ? 'You' : (scores.cpu > scores.player ? 'CPU' : 'Tie');
-                        addLog(`🏆 Game Over! ${winner} wins!`);
-                        return;
+                        declareWinner();
+                    } else if (role === 'cpu') {
+                        setTimeout(triggerCpuTurn, 1000);
                     }
-
-                    endTurn(role === 'player' ? 'cpu' : 'player');
                 }
             }
 
-            function endTurn(nextPlayer) {
-                if (gamePhase === 'ended') return;
-                activePlayer = nextPlayer;
-                setTurn(nextPlayer);
+            function triggerCpuTurn() {
+                if (gamePhase !== 'blown' || activePlayer !== 'cpu' || seeds.length === 0) return;
+                isCpuThinking = true;
 
-                if (nextPlayer === 'cpu') {
-                    isCpuThinking = true;
-                    setTimeout(() => {
-                        if (seeds.length > 0) {
-                            const randomIndex = Math.floor(Math.random() * seeds.length);
-                            attemptToPick(randomIndex, 'cpu');
-                        }
-                        isCpuThinking = false;
-                    }, 800);
+                let safetyRatings = [];
+
+                for (let i = 0; i < seeds.length; i++) {
+                    let neighborsCount = 0;
+                    let closestDistance = Infinity;
+
+                    for (let j = 0; j < seeds.length; j++) {
+                        if (i === j) continue;
+                        const dist = Math.hypot(seeds[i].x - seeds[j].x, seeds[i].y - seeds[j].y);
+                        if (dist < 32) neighborsCount++;
+                        if (dist < closestDistance) closestDistance = dist;
+                    }
+
+                    safetyRatings.push({ index: i, count: neighborsCount, gap: closestDistance });
+                }
+
+                safetyRatings.sort((a, b) => a.count - b.count || b.gap - a.gap);
+
+                const isAccurateShot = Math.random() < 0.78;
+                let targetIdx = -1;
+
+                if (isAccurateShot && safetyRatings[0].count === 0) {
+                    targetIdx = safetyRatings[0].index;
+                } else {
+                    const indexWindow = Math.min(safetyRatings.length - 1, 3);
+                    const randomChoice = Math.floor(Math.random() * indexWindow);
+                    targetIdx = safetyRatings[randomChoice].index;
+                }
+
+                addLog('<span class="chinta-turn-log">🤖 CPU is aiming at a seed...</span>');
+
+                setTimeout(() => {
+                    if (targetIdx >= 0 && targetIdx < seeds.length) {
+                        attemptToPick(targetIdx, 'cpu');
+                    } else {
+                        switchTurn();
+                    }
+                    isCpuThinking = false;
+                }, 1200);
+            }
+
+            function switchTurn() {
+                if (activePlayer === 'player') {
+                    setTurn('cpu');
+                    setTimeout(triggerCpuTurn, 1000);
+                } else {
+                    setTurn('player');
                 }
             }
 
             function setTurn(player) {
+                activePlayer = player;
                 if (player === 'player') {
-                    turnBanner.textContent = 'Your Turn';
+                    turnBanner.innerText = 'Your Turn';
                     turnBanner.className = 'chinta-turn-indicator chinta-player-turn';
                 } else {
-                    turnBanner.textContent = 'CPU Turn';
+                    turnBanner.innerText = "CPU's Turn...";
                     turnBanner.className = 'chinta-turn-indicator chinta-cpu-turn';
                 }
             }
 
-            function updateUI() {
-                playerScoreEl.textContent = scores.player;
-                cpuScoreEl.textContent = scores.cpu;
-                seedsCountEl.textContent = seeds.length;
+            function declareWinner() {
+                gamePhase = 'finished';
+                const winner = scores.player > scores.cpu ? 'You win!' : (scores.cpu > scores.player ? 'CPU wins!' : "It's a Tie!");
+                addLog(`🏆 <strong>Game Over!</strong> ${winner} final scores: You: ${scores.player} | CPU: ${scores.cpu}`);
+                turnBanner.innerText = winner;
             }
 
-            function addLog(entry) {
-                const logEntry = document.createElement('div');
-                logEntry.className = 'chinta-log-entry';
-                logEntry.innerHTML = entry;
-                logBox.appendChild(logEntry);
+            function addLog(msg) {
+                const entry = document.createElement('div');
+                entry.className = 'chinta-log-entry';
+                entry.innerHTML = msg;
+                logBox.appendChild(entry);
                 logBox.scrollTop = logBox.scrollHeight;
             }
 
+            function updateUI() {
+                seedsCountEl.innerText = seeds.length;
+                playerScoreEl.innerText = scores.player;
+                cpuScoreEl.innerText = scores.cpu;
+            }
+
             function resetGame() {
-                seeds = [];
                 scores = { player: 0, cpu: 0 };
-                activePlayer = 'player';
                 gamePhase = 'setup';
+                activePlayer = 'player';
                 isCpuThinking = false;
-                seedCountSetting = parseInt(seedSlider.value);
-                sliderValueEl.innerText = seedCountSetting;
-                updateUI();
                 blowBtn.disabled = false;
-                logBox.innerHTML = '<div class="chinta-log-entry">Game reset. Select your seed count and click "Blow Pile"!</div>';
-                setTurn('player');
+                turnBanner.innerText = 'Your Turn';
+                turnBanner.className = 'chinta-turn-indicator chinta-player-turn';
+                logBox.innerHTML = `<div class="chinta-log-entry">${seedCountSetting} fresh seeds piled up. Ready to scatter!</div>`;
                 initSeeds();
             }
 
-            seedSlider.addEventListener('input', (e) => adjustSeedConfig(e.target.value));
             blowBtn.addEventListener('click', blowPile);
             resetBtn.addEventListener('click', resetGame);
-
+            seedSlider.addEventListener('input', (e) => adjustSeedConfig(e.target.value));
             initSeeds();
             animate();
         }
 
-        function setupVamanaGulluGame() {
-            const playerPitsContainer = document.getElementById('player-pits-container');
-            const cpuPitsContainer = document.getElementById('cpu-pits-container');
+        function setupVamanaGame() {
+            let board = [];
+            let playerScore = 0;
+            let cpuScore = 0;
+            let isPlayerTurn = true;
+            let gameActive = true;
+            const SEEDS_PER_PIT = 5;
+
+            const playerRowEl = document.getElementById('player-pits-container');
+            const cpuRowEl = document.getElementById('cpu-pits-container');
             const playerScoreEl = document.getElementById('player-score');
             const cpuScoreEl = document.getElementById('cpu-score');
             const statusEl = document.getElementById('status');
-            const resetBtn = document.getElementById('reset-btn');
             const instructionsBtn = document.getElementById('instructions-btn');
-            const instructionsDiv = document.getElementById('instructions');
+            const instructionsEl = document.getElementById('instructions');
+            const resetBtn = document.getElementById('reset-btn');
 
-            let pits = {};
-            let scores = { player: 0, cpu: 0 };
-            let turn = 'player';
-            let seedCount = 5;
-            let pitCount = 6;
-
-            function initPits() {
-                pits = {};
-                for (let i = 0; i < pitCount; i++) {
-                    pits[`player${i}`] = seedCount;
-                    pits[`cpu${i}`] = seedCount;
-                }
-                renderBoard();
-                statusEl.textContent = 'Your turn! Select a pit.';
-                turn = 'player';
+            function initGame() {
+                board = Array(14).fill(SEEDS_PER_PIT);
+                playerScore = 0;
+                cpuScore = 0;
+                isPlayerTurn = true;
+                gameActive = true;
+                renderBoardData();
+                updateUI();
             }
 
-            function renderBoard() {
-                playerPitsContainer.innerHTML = '';
-                cpuPitsContainer.innerHTML = '';
+            function renderBoardData() {
+                playerRowEl.innerHTML = '';
+                cpuRowEl.innerHTML = '';
 
-                for (let i = 0; i < pitCount; i++) {
-                    const playerPit = createPitElement(`player${i}`, pits[`player${i}`]);
-                    const cpuPit = createPitElement(`cpu${i}`, pits[`cpu${i}`]);
-
-                    playerPitsContainer.appendChild(playerPit);
-                    cpuPitsContainer.appendChild(cpuPit);
+                for (let i = 0; i < 7; i++) {
+                    playerRowEl.appendChild(createPitElement(i, 'player-pit'));
                 }
 
-                playerScoreEl.textContent = scores.player;
-                cpuScoreEl.textContent = scores.cpu;
+                for (let i = 7; i < 14; i++) {
+                    cpuRowEl.appendChild(createPitElement(i, 'cpu-pit'));
+                }
             }
 
-            function createPitElement(id, seeds) {
+            function createPitElement(index, className) {
                 const pit = document.createElement('div');
-                pit.className = 'pit';
-                pit.id = id;
+                pit.className = `pit ${className}`;
+                pit.dataset.index = index;
 
-                if (seeds === 0) {
-                    pit.classList.add('empty');
-                } else if (id.startsWith('cpu')) {
-                    pit.classList.add('cpu-pit');
-                } else {
-                    pit.classList.add('player-pit');
-                    pit.addEventListener('click', () => {
-                        if (turn === 'player' && seeds > 0) {
-                            sowSeeds(id);
-                        }
-                    });
+                const seedCount = document.createElement('span');
+                seedCount.className = 'seed-count';
+                seedCount.id = `count-${index}`;
+                pit.appendChild(seedCount);
+
+                const seedsContainer = document.createElement('div');
+                seedsContainer.className = 'seeds-container';
+                seedsContainer.id = `seeds-container-${index}`;
+                pit.appendChild(seedsContainer);
+
+                if (className === 'player-pit') {
+                    pit.addEventListener('click', () => handlePitClick(index));
                 }
-
-                const seedCountSpan = document.createElement('div');
-                seedCountSpan.className = 'seed-count';
-                seedCountSpan.textContent = seeds;
-                pit.appendChild(seedCountSpan);
 
                 return pit;
             }
 
-            function sowSeeds(startId) {
-                if (turn !== 'player') return;
+            function updateUI() {
+                for (let i = 0; i < 14; i++) {
+                    const pitEl = document.querySelector(`[data-index="${i}"]`);
+                    const countEl = document.getElementById(`count-${i}`);
+                    const containerEl = document.getElementById(`seeds-container-${i}`);
+                    const count = board[i];
+                    countEl.textContent = count;
 
-                let seeds = pits[startId];
-                pits[startId] = 0;
-                let currentIndex = parseInt(startId.replace(/\D/g, ''));
-                let player = startId.startsWith('player') ? 'player' : 'cpu';
-
-                while (seeds > 0) {
-                    currentIndex++;
-                    if (currentIndex >= pitCount) {
-                        currentIndex = 0;
-                        player = player === 'player' ? 'cpu' : 'player';
+                    if (count === 0) {
+                        pitEl.classList.add('empty');
+                    } else {
+                        pitEl.classList.remove('empty');
                     }
 
-                    const pitId = `${player}${currentIndex}`;
-                    pits[pitId]++;
-                    seeds--;
-
-                    if (seeds === 0) {
-                        if (player === 'player' && pits[pitId] === 1) {
-                            const oppositeId = `cpu${pitCount - 1 - currentIndex}`;
-                            if (pits[oppositeId] > 0) {
-                                scores.player += pits[oppositeId];
-                                pits[oppositeId] = 0;
-                            }
-                        }
+                    containerEl.innerHTML = '';
+                    const visibleSeeds = Math.min(count, 12);
+                    for (let s = 0; s < visibleSeeds; s++) {
+                        const seedNode = document.createElement('div');
+                        seedNode.className = 'seed';
+                        containerEl.appendChild(seedNode);
                     }
                 }
 
-                renderBoard();
-                if (isGameOver()) {
-                    endGame();
+                playerScoreEl.textContent = playerScore;
+                cpuScoreEl.textContent = cpuScore;
+
+                if (!gameActive) return;
+
+                if (isPlayerTurn) {
+                    statusEl.textContent = 'Your turn! Choose a pit.';
+                    statusEl.style.color = 'var(--player-color)';
                 } else {
-                    turn = 'cpu';
                     statusEl.textContent = 'CPU is thinking...';
-                    setTimeout(() => cpuTurn(), 1000);
+                    statusEl.style.color = 'var(--cpu-color)';
                 }
             }
 
-            function cpuTurn() {
-                for (let i = 0; i < pitCount; i++) {
-                    if (pits[`cpu${i}`] > 0) {
-                        sowSeeds(`cpu${i}`);
+            function handlePitClick(index) {
+                if (!gameActive || !isPlayerTurn || board[index] === 0 || index > 6) return;
+                executeTurn(index);
+            }
+
+            function executeTurn(startIndex) {
+                let seedsHand = board[startIndex];
+                board[startIndex] = 0;
+                let currentIndex = startIndex;
+
+                const sowInterval = setInterval(() => {
+                    currentIndex = (currentIndex + 1) % 14;
+                    board[currentIndex]++;
+                    seedsHand--;
+                    updateUI();
+
+                    if (seedsHand === 0) {
+                        clearInterval(sowInterval);
+                        handleTurnEnding(currentIndex);
+                    }
+                }, 250);
+            }
+
+            function handleTurnEnding(lastIndex) {
+                if (board[lastIndex] === 1) {
+                    if (isPlayerTurn && lastIndex >= 0 && lastIndex <= 6) {
+                        const oppositeIndex = 13 - lastIndex;
+                        if (board[oppositeIndex] > 0) {
+                            playerScore += board[oppositeIndex];
+                            board[oppositeIndex] = 0;
+                            statusEl.textContent = 'Nice! You captured the opposite pit\'s seeds!';
+                        }
+                    } else if (!isPlayerTurn && lastIndex >= 7 && lastIndex <= 13) {
+                        const oppositeIndex = 13 - lastIndex;
+                        if (board[oppositeIndex] > 0) {
+                            cpuScore += board[oppositeIndex];
+                            board[oppositeIndex] = 0;
+                            statusEl.textContent = 'CPU captured your seeds!';
+                        }
+                    }
+
+                    checkGameEnd();
+                    if (gameActive) {
+                        isPlayerTurn = !isPlayerTurn;
+                        updateUI();
+                        if (!isPlayerTurn) {
+                            setTimeout(makeCPUMove, 1200);
+                        }
+                    }
+                } else {
+                    setTimeout(() => {
+                        executeTurn(lastIndex);
+                    }, 400);
+                }
+            }
+
+            function makeCPUMove() {
+                if (!gameActive) return;
+
+                const validMoves = [];
+                for (let i = 7; i <= 13; i++) {
+                    if (board[i] > 0) validMoves.push(i);
+                }
+
+                if (validMoves.length === 0) {
+                    checkGameEnd();
+                    return;
+                }
+
+                let chosenMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                for (const move of validMoves) {
+                    const seeds = board[move];
+                    const finalLandingIndex = (move + seeds) % 14;
+                    if (finalLandingIndex >= 7 && finalLandingIndex <= 13 && board[finalLandingIndex] === 0) {
+                        chosenMove = move;
                         break;
                     }
                 }
 
-                renderBoard();
-                if (!isGameOver()) {
-                    turn = 'player';
-                    statusEl.textContent = 'Your turn! Select a pit.';
+                executeTurn(chosenMove);
+            }
+
+            function checkGameEnd() {
+                const playerSideEmpty = board.slice(0, 7).every(val => val === 0);
+                const cpuSideEmpty = board.slice(7, 14).every(val => val === 0);
+
+                if (playerSideEmpty || cpuSideEmpty) {
+                    gameActive = false;
+
+                    for (let i = 0; i < 7; i++) {
+                        playerScore += board[i];
+                        board[i] = 0;
+                    }
+                    for (let i = 7; i < 14; i++) {
+                        cpuScore += board[i];
+                        board[i] = 0;
+                    }
+
+                    updateUI();
+
+                    if (playerScore > cpuScore) {
+                        statusEl.textContent = `🎉 Game Over! You win with ${playerScore} seeds!`;
+                        statusEl.style.color = 'var(--player-color)';
+                    } else if (cpuScore > playerScore) {
+                        statusEl.textContent = `Game Over. CPU wins with ${cpuScore} seeds.`;
+                        statusEl.style.color = 'var(--cpu-color)';
+                    } else {
+                        statusEl.textContent = `Game Over! It's an exact tie (${playerScore} - ${cpuScore})!`;
+                        statusEl.style.color = '#444';
+                    }
                 }
             }
 
-            function isGameOver() {
-                const playerEmpty = Array.from({ length: pitCount }, (_, i) => pits[`player${i}`] === 0).every(x => x);
-                const cpuEmpty = Array.from({ length: pitCount }, (_, i) => pits[`cpu${i}`] === 0).every(x => x);
-                return playerEmpty || cpuEmpty;
-            }
-
-            function endGame() {
-                const winner = scores.player > scores.cpu ? 'You win!' : (scores.cpu > scores.player ? 'CPU wins!' : 'It\'s a tie!');
-                statusEl.textContent = `Game Over! ${winner}`;
-            }
-
-            function resetGame() {
-                scores = { player: 0, cpu: 0 };
-                initPits();
-            }
-
-            resetBtn.addEventListener('click', resetGame);
             instructionsBtn.addEventListener('click', () => {
-                instructionsDiv.classList.toggle('hidden');
+                instructionsEl.classList.toggle('hidden');
+                instructionsBtn.textContent = instructionsEl.classList.contains('hidden') ? 'Instructions' : 'Hide Instructions';
             });
 
-            initPits();
-        }
-
-        function setupVaikunthapaaliGame() {
-            const boardContainer = document.getElementById('vp-board');
-            const playerToken = document.getElementById('vp-player-token');
-            const cpuToken = document.getElementById('vp-cpu-token');
-            const rollBtn = document.getElementById('vp-roll-btn');
-            const diceEl = document.getElementById('vp-dice');
-            const turnBanner = document.getElementById('vp-turn-banner');
-            const logBox = document.getElementById('vp-log');
-            const resetBtn1 = document.getElementById('vp-reset-btn');
-            const resetBtn2 = document.getElementById('vp-reset-btn-secondary');
-            const instructionsBtn = document.getElementById('vp-instructions-btn');
-            const instructionsDiv = document.getElementById('vp-instructions');
-
-            const virtues = { 10: 30, 19: 38, 28: 84, 51: 67, 72: 91, 78: 98 };
-            const vices = { 17: 7, 48: 26, 56: 53, 62: 18, 87: 24, 93: 73, 95: 75, 99: 80 };
-
-            let positions = { player: 0, cpu: 0 };
-            let turn = 'player';
-
-            function initGame() {
-                positions = { player: 0, cpu: 0 };
-                turn = 'player';
-                updateTokens();
-                updateTurnBanner();
-                logBox.innerHTML = '<div class="vp-log-entry">Welcome. Begin your ascent on the sacred path. Roll to start!</div>';
-                diceEl.textContent = '-';
-            }
-
-            function rollDice() {
-                if (turn !== 'player') return;
-                const roll = Math.floor(Math.random() * 6) + 1;
-                diceEl.textContent = roll;
-                movePlayer(roll);
-            }
-
-            function movePlayer(roll) {
-                positions.player += roll;
-
-                if (positions.player >= 100) {
-                    positions.player = 100;
-                    addLog(`🎉 <span class="vp-virtue">You reached Paramapada!</span> You win!`);
-                    logBox.scrollTop = logBox.scrollHeight;
-                    rollBtn.disabled = true;
-                    return;
-                }
-
-                if (virtues[positions.player]) {
-                    addLog(`✨ <span class="vp-virtue">Virtue encountered!</span> You moved from ${positions.player} to ${virtues[positions.player]}`);
-                    positions.player = virtues[positions.player];
-                } else if (vices[positions.player]) {
-                    addLog(`☠️ <span class="vp-vice">Vice encountered!</span> You slipped from ${positions.player} to ${vices[positions.player]}`);
-                    positions.player = vices[positions.player];
-                }
-
-                updateTokens();
-                turn = 'cpu';
-                updateTurnBanner();
-                setTimeout(() => cpuRoll(), 1000);
-            }
-
-            function cpuRoll() {
-                const roll = Math.floor(Math.random() * 6) + 1;
-                diceEl.textContent = roll;
-                positions.cpu += roll;
-
-                if (positions.cpu >= 100) {
-                    positions.cpu = 100;
-                    addLog(`🎉 <span class="vp-vice">CPU reached Paramapada!</span> CPU wins!`);
-                    logBox.scrollTop = logBox.scrollHeight;
-                    rollBtn.disabled = true;
-                    return;
-                }
-
-                if (virtues[positions.cpu]) {
-                    addLog(`✨ <span class="vp-virtue">CPU virtue!</span> CPU moved from ${positions.cpu} to ${virtues[positions.cpu]}`);
-                    positions.cpu = virtues[positions.cpu];
-                } else if (vices[positions.cpu]) {
-                    addLog(`☠️ <span class="vp-vice">CPU vice!</span> CPU slipped from ${positions.cpu} to ${vices[positions.cpu]}`);
-                    positions.cpu = vices[positions.cpu];
-                }
-
-                updateTokens();
-                turn = 'player';
-                updateTurnBanner();
-            }
-
-            function updateTokens() {
-                const cellSize = 55;
-                const playerCell = positions.player;
-                const cpuCell = positions.cpu;
-
-                const playerRow = Math.floor(playerCell / 10);
-                const playerCol = playerCell % 10;
-                const playerX = playerCol * cellSize + cellSize / 2;
-                const playerY = playerRow * cellSize + cellSize / 2;
-
-                const cpuRow = Math.floor(cpuCell / 10);
-                const cpuCol = cpuCell % 10;
-                const cpuX = cpuCol * cellSize + cellSize / 2;
-                const cpuY = cpuRow * cellSize + cellSize / 2;
-
-                playerToken.style.left = (playerX - 10) + 'px';
-                playerToken.style.top = (playerY - 10) + 'px';
-
-                cpuToken.style.left = (cpuX - 10) + 'px';
-                cpuToken.style.top = (cpuY - 10) + 'px';
-            }
-
-            function updateTurnBanner() {
-                if (turn === 'player') {
-                    turnBanner.textContent = 'Your Turn';
-                    turnBanner.className = 'vp-turn-indicator vp-player-turn';
-                } else {
-                    turnBanner.textContent = 'CPU Turn';
-                    turnBanner.className = 'vp-turn-indicator vp-cpu-turn';
-                }
-            }
-
-            function addLog(entry) {
-                const logEntry = document.createElement('div');
-                logEntry.className = 'vp-log-entry';
-                logEntry.innerHTML = entry;
-                logBox.appendChild(logEntry);
-                logBox.scrollTop = logBox.scrollHeight;
-            }
-
-            function resetGame() {
-                initGame();
-                rollBtn.disabled = false;
-            }
-
-            for (let i = 0; i < 100; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'vp-cell';
-                if (i === 99) cell.classList.add('vp-cell-100');
-                cell.textContent = i + 1;
-                boardContainer.appendChild(cell);
-            }
-
-            rollBtn.addEventListener('click', rollDice);
-            resetBtn1.addEventListener('click', resetGame);
-            resetBtn2.addEventListener('click', resetGame);
-            instructionsBtn.addEventListener('click', () => {
-                instructionsDiv.classList.toggle('hidden');
-            });
-
+            resetBtn.addEventListener('click', initGame);
             initGame();
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            setupVamanaGulluGame();
-            setupVaikunthapaaliGame();
-            setupChintapikkalaGame();
-        });
+        function setupVaikunthaPaliGame() {
+            const boardEl = document.getElementById('vp-board');
+            const boardImage = document.getElementById('vp-board-image');
+            const canvas = document.getElementById('vp-canvas-overlay');
+            const ctx = canvas.getContext('2d');
+            const turnBanner = document.getElementById('vp-turn-banner');
+            const diceEl = document.getElementById('vp-dice');
+            const rollBtn = document.getElementById('vp-roll-btn');
+            const logEl = document.getElementById('vp-log');
+            const instructionsBtn = document.getElementById('vp-instructions-btn');
+            const instructionsEl = document.getElementById('vp-instructions');
+            const resetBtn = document.getElementById('vp-reset-btn');
+            const resetBtnSecondary = document.getElementById('vp-reset-btn-secondary');
+            const boardSize = 10;
+            const cellSize = 55;
+
+            const ladders = {
+                12: { to: 38, name: 'Faith (Shraddha)' },
+                32: { to: 55, name: 'Conscience (Viveka)' },
+                51: { to: 72, name: 'Reliability (Satya)' },
+                57: { to: 86, name: 'Generosity (Dana)' },
+                76: { to: 97, name: 'Knowledge (Jnana)' }
+            };
+
+            const snakes = {
+                41: { to: 19, name: 'Disobedience (Agnyana)' },
+                52: { to: 28, name: 'Theft (Chora)' },
+                84: { to: 45, name: 'Anger (Krodha)' },
+                92: { to: 63, name: 'Greed (Lobha)' },
+                99: { to: 22, name: 'Ego / Lust (Mada/Maatsarya)' }
+            };
+
+            let positions = { player: 1, cpu: 1 };
+            let isMoving = false;
+            let activeTurn = 'player';
+
+            function createBoard() {
+                boardEl.innerHTML = '';
+                for (let row = boardSize - 1; row >= 0; row--) {
+                    const isRowEven = row % 2 === 0;
+                    for (let col = 0; col < boardSize; col++) {
+                        const actualCol = isRowEven ? col : (boardSize - 1 - col);
+                        const cellNumber = (row * boardSize) + actualCol + 1;
+                        const cell = document.createElement('div');
+                        cell.className = `vp-cell vp-cell-${cellNumber}`;
+                        cell.id = `vp-cell-${cellNumber}`;
+                        cell.innerHTML = `<span>${cellNumber}</span>`;
+
+                        if (ladders[cellNumber]) {
+                            cell.innerHTML += `<span style="color:#2e7d32;font-size:10px;">▲ ${ladders[cellNumber].name.split(' ')[0]}</span>`;
+                        } else if (snakes[cellNumber]) {
+                            cell.innerHTML += `<span style="color:#c62828;font-size:10px;">▼ ${snakes[cellNumber].name.split(' ')[0]}</span>`;
+                        } else if (cellNumber === 100) {
+                            cell.className += ' vp-cell-100';
+                        }
+                        boardEl.appendChild(cell);
+                    }
+                }
+            }
+
+            function getCellCoordinates(num) {
+                const index = num - 1;
+                const row = Math.floor(index / boardSize);
+                const col = index % boardSize;
+                const visualRow = boardSize - 1 - row;
+                const visualCol = (row % 2 === 0) ? col : (boardSize - 1 - col);
+                return {
+                    x: visualCol * cellSize + cellSize / 2,
+                    y: visualRow * cellSize + cellSize / 2
+                };
+            }
+
+            function drawSnakesAndLadders() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                Object.keys(ladders).forEach(start => {
+                    const startPt = getCellCoordinates(parseInt(start));
+                    const endPt = getCellCoordinates(ladders[start].to);
+                    ctx.strokeStyle = 'rgba(46, 125, 50, 0.6)';
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(startPt.x, startPt.y);
+                    ctx.lineTo(endPt.x, endPt.y);
+                    ctx.stroke();
+                });
+
+                Object.keys(snakes).forEach(start => {
+                    const startPt = getCellCoordinates(parseInt(start));
+                    const endPt = getCellCoordinates(snakes[start].to);
+                    ctx.strokeStyle = 'rgba(198, 40, 40, 0.6)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(startPt.x, startPt.y);
+                    const cp1x = (startPt.x + endPt.x) / 2 + 25;
+                    const cp1y = (startPt.y + endPt.y) / 2 - 15;
+                    const cp2x = (startPt.x + endPt.x) / 2 - 25;
+                    const cp2y = (startPt.y + endPt.y) / 2 + 15;
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endPt.x, endPt.y);
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(198, 40, 40, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(startPt.x, startPt.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            boardImage.onload = () => {
+                boardEl.style.visibility = 'hidden';
+                boardImage.style.display = 'block';
+            };
+
+            boardImage.onerror = () => {
+                boardImage.style.display = 'none';
+                boardEl.style.visibility = 'visible';
+            };
+
+            function updateVisualPositions() {
+                const pCoords = getCellCoordinates(positions.player);
+                const cCoords = getCellCoordinates(positions.cpu);
+                const pToken = document.getElementById('vp-player-token');
+                const cToken = document.getElementById('vp-cpu-token');
+
+                if (positions.player === positions.cpu) {
+                    pToken.style.left = `${pCoords.x - 18}px`;
+                    pToken.style.top = `${pCoords.y - 10}px`;
+                    cToken.style.left = `${cCoords.x + 2}px`;
+                    cToken.style.top = `${cCoords.y - 10}px`;
+                } else {
+                    pToken.style.left = `${pCoords.x - 10}px`;
+                    pToken.style.top = `${pCoords.y - 10}px`;
+                    cToken.style.left = `${cCoords.x - 10}px`;
+                    cToken.style.top = `${cCoords.y - 10}px`;
+                }
+            }
+
+            function logMessage(text) {
+                const entry = document.createElement('div');
+                entry.className = 'vp-log-entry';
+                entry.innerHTML = text;
+                logEl.appendChild(entry);
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+
+            function setTurnBanner(turn) {
+                if (turn === 'player') {
+                    turnBanner.innerText = 'Your Turn';
+                    turnBanner.className = 'vp-turn-indicator vp-player-turn';
+                    rollBtn.disabled = false;
+                } else {
+                    turnBanner.innerText = "CPU's Turn...";
+                    turnBanner.className = 'vp-turn-indicator vp-cpu-turn';
+                    rollBtn.disabled = true;
+                }
+            }
+
+            async function handleUserTurn() {
+                if (isMoving || activeTurn !== 'player') return;
+                await executeMove('player');
+            }
+
+            async function executeMove(role) {
+                isMoving = true;
+                rollBtn.disabled = true;
+
+                const dieRoll = Math.floor(Math.random() * 6) + 1;
+                diceEl.innerText = dieRoll;
+
+                const nameLabel = role === 'player' ? '<strong>You</strong>' : '<strong>CPU</strong>';
+                logMessage(`${nameLabel} rolled a <strong>${dieRoll}</strong>.`);
+
+                let currentPos = positions[role];
+                let targetPos = currentPos + dieRoll;
+
+                if (targetPos > 100) {
+                    logMessage(`${nameLabel} rolled too high to enter Vaikuntha. Remaining at ${currentPos}.`);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                    switchTurns();
+                    return;
+                }
+
+                while (currentPos < targetPos) {
+                    currentPos++;
+                    positions[role] = currentPos;
+                    updateVisualPositions();
+                    await new Promise(resolve => setTimeout(resolve, 220));
+                }
+
+                if (ladders[currentPos]) {
+                    const map = ladders[currentPos];
+                    logMessage(`✨ ${nameLabel} cultivated <span class="vp-virtue">${map.name}</span>! Climbing to ${map.to}.`);
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                    positions[role] = map.to;
+                    updateVisualPositions();
+                } else if (snakes[currentPos]) {
+                    const map = snakes[currentPos];
+                    logMessage(`🐍 ${nameLabel} succumbed to <span class="vp-vice">${map.name}</span>! Dropping back to ${map.to}.`);
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                    positions[role] = map.to;
+                    updateVisualPositions();
+                }
+
+                if (positions[role] === 100) {
+                    logMessage(`🎉 **${role === 'player' ? 'Victory' : 'The CPU'} has reached Paramapada!**`);
+                    rollBtn.disabled = true;
+                    turnBanner.innerText = role === 'player' ? 'You Win!' : 'CPU Wins!';
+                    isMoving = false;
+                    return;
+                }
+
+                switchTurns();
+            }
+
+            async function switchTurns() {
+                isMoving = false;
+                if (activeTurn === 'player') {
+                    activeTurn = 'cpu';
+                    setTurnBanner('cpu');
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    await executeMove('cpu');
+                } else {
+                    activeTurn = 'player';
+                    setTurnBanner('player');
+                }
+            }
+
+            function resetGame() {
+                positions.player = 1;
+                positions.cpu = 1;
+                isMoving = false;
+                activeTurn = 'player';
+                diceEl.innerText = '-';
+                setTurnBanner('player');
+                updateVisualPositions();
+                logEl.innerHTML = '<div class="vp-log-entry">A fresh journey begins. Clear your mind and roll!</div>';
+            }
+
+            instructionsBtn.addEventListener('click', () => {
+                instructionsEl.classList.toggle('hidden');
+                instructionsBtn.textContent = instructionsEl.classList.contains('hidden') ? 'Instructions' : 'Hide Instructions';
+            });
+
+            resetBtn.addEventListener('click', resetGame);
+            resetBtnSecondary.addEventListener('click', resetGame);
+            rollBtn.addEventListener('click', handleUserTurn);
+
+            createBoard();
+            drawSnakesAndLadders();
+            updateVisualPositions();
+            setTurnBanner('player');
+        }
+
+        setupChintapikkalaGame();
+        setupVamanaGame();
+        setupVaikunthaPaliGame();
+        showGame('vamana');
     </script>
 </body>
 </html>
