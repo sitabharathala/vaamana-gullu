@@ -1,8 +1,8 @@
-# vaamana-gullu
+# vaaman-guntalu
 this is an ancient south indian game
 A 2 player game, with simple math being the main idea behind it
 Traditional 14-Pit Board Game
-How to Play Vamana Gullu
+How to Play Vaaman Guntalu
 	•	The Setup: The board consists of two rows of 7 pits. Your pits are on the bottom row, and the CPU owns the top row. Each pit starts with 5 seeds.
 	•	Sowing Seeds: On your turn, click any non-empty pit on your side. The game will pick up all the seeds from that pit and automatically distribute them counter-clockwise, dropping exactly one seed into each consecutive pit.
 	•	The Continuous Loop: If the last seed you drop lands into a pit that already contains seeds, those seeds are immediately scooped up, and the sowing loop keeps moving forward in the same direction.
